@@ -1,0 +1,172 @@
+#!/bin/bash
+
+#Prints a help message
+function print_help {
+	echo "Usage: $0 [options] --longreads LR.fasta --shortreads SR.fastq --out result.fasta"
+	echo ""
+	echo "	Input files:"
+	echo "	LR.fasta:	fasta file of long reads, one sequence per line."
+	echo "	SR.fastq:	fastq file of short reads."
+	echo "			Warning: only one file must be provided."
+	echo "			If using paired reads, please concatenate them into one single file."
+	echo "	result.fasta:	fasta file where to output the synthetic long reads."
+	echo ""
+	echo "	Options:"
+	echo "	--kmer:		k-mer size for the graph construction (default: 64)."
+	echo "	--seedsoverlap:	Minimum overlap length to allow the merging of two overlapping seeds (default: k-1)."
+	echo "	--minoverlap:	Minimum overlap length to allow the exploration of an edge of the graph (default: k-5)."
+	echo "	--backtracks:	Maximum number of backtracks (default: 1,125)."
+	echo "	--seedskips:	Maximum number of seed skips (default: 5)."
+	echo "	--bestn		Top alignments to be reported by BLASR (default: 30)."
+	echo "	--nproc		Number of processes to run in parallel (default: number of cores)."
+	echo "	--help:		Print this help message."
+	exit 1
+}
+
+#Set options to default values
+longreads=""
+LR=""
+shortreads=""
+SR=""
+k=64
+seedsoverlap=""
+minoverlap=""
+backtracks=1125
+seedskips=5
+bestn=30
+nproc=$(nproc)
+out=""
+
+#Print help if no argument specified
+if [[ "$1" == "" ]] ; then
+	print_help
+fi
+
+#Otions handling
+while [[ "$1" != "" ]] ; do
+	case "$1" in
+		"--help")
+			print_help ;;
+		"--longreads")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) longreads="$2" ; LR=$(basename "$2") ; shift 2 ;;
+			esac;;
+		"--shortreads")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) shortreads="$2" ; SR=$(basename "$2") ; shift 2 ;;
+			esac ;;
+		"--out")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) out="$2" ; shift 2 ;;
+			esac ;;
+		"--kmer")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) k="$2" ; shift 2 ;;
+			esac ;;
+		"--seedsoverlap")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) seedsoverlap="$2" ; shift 2 ;;
+			esac ;;
+		"--minoverlap")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) minoverlap="$2" ; shift 2 ;;
+			esac ;;
+		"--backtracks")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) backtracks="$2" ; shift 2 ;;
+			esac ;;
+		"--seedskips")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) seedskips="$2" ; shift 2 ;;
+			esac ;;
+		"--bestn")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) bestn="$2" ; shift 2 ;;
+			esac ;;
+		"--nproc")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) nproc="$2" ; shift 2 ;;
+			esac ;;
+    		--)
+			shift ; break ;;
+    		*)
+			echo "Error: invalid option \"$1\"" ; exit 1 ;;
+  	esac
+done
+
+#If seedsoverlap or minoverlap haven't been set, set them to default values
+if [[ $seedsoverlap = "" ]] ; then
+	seedsoverlap=$((k-1))
+fi
+if [[ $minoverlap = "" ]] ; then
+	minoverlap=$((k-5))
+fi
+
+#Exit if no short reads, no long reads, or no output files have been specified
+if [[ $LR == "" ]] ; then
+	echo "Error: --longreads must be specified";
+	exit 1;
+fi
+if [[ $SR == "" ]] ; then
+	echo "Error: --shortreads must be specified";
+	exit 1;
+fi
+if [[ $out == "" ]] ; then
+	echo "Error: --out must be specified";
+	exit 1;
+fi
+
+#Remove the output file if it already exists
+if [[ -f $out ]] ; then
+	rm $out
+fi
+
+#Run the correction pipeline
+
+aln="$SR""_on_$LR"
+seeds="seeds_"$$
+formatLR="format_$LR"
+log="log"$$
+errlog="errlog"$$
+
+echo "Correcting short reads..."
+quorum -q 33 -t "$nproc" "$shortreads"
+echo "...Done"
+rm quorum_corrected.log
+rm quorum_corrected_mer_database.jf
+echo "Counting k-mers and building the index..."
+./bin/filterShortReads.py quorum_corrected.fa "$k" > long_quorum_corrected.fa
+rm quorum_corrected.fa
+revseq long_quorum_corrected.fa -reverse -complement -outseq RC_long_quorum_corrected.fa 2>> "$errlog"
+cat long_quorum_corrected.fa RC_long_quorum_corrected.fa > all_long_quorum_corrected.fa
+jellyfish count -m "$k" -s 500M -t "$nproc" all_long_quorum_corrected.fa
+rm RC_long_quorum_corrected.fa
+rm all_long_quorum_corrected.fa
+jellyfish dump mer_counts.jf > "$k-mers-$SR"
+rm mer_counts.jf
+sed -i '/>.*/d' "$k-mers-$SR"
+./PgSAgen "$k-mers-$SR" "$k-mers-$SR" >> "$log" 2>> "$errlog"
+echo "...Done"
+
+echo "Aligning short reads on long reads..."
+./bin/formatLongReads.py "$longreads" > "$formatLR"
+./bin/blasr long_quorum_corrected.fa "$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > "$aln" 2>> "$errlog"
+rm long_quorum_corrected.fa
+./bin/filterOutShortAlignments.py "$aln" "$k" > "tmp_$aln"
+mv "tmp_$aln" "$aln"
+echo "...Done"
+echo "Generating sythetic long reads..."
+cut -f 3 "$aln" | sort -u > "$seeds"
+parallel -j "$nproc" ./generateSLR "$aln" "$k" "$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $seeds
+echo "..Done"
+rm $log $errlog $aln $formatLR "$k-mers-$SR" "$k-mers-$SR.pgsa" $seeds
