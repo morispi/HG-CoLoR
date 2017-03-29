@@ -37,7 +37,7 @@ Installation
   1. Go to the PgSA directory, and compile the PgSA library:  
   `make build CONF=pgsalib`
   2. Go back to the HG-CoLoR directory and run:             
-  `make PGSA_PATH=/absolute/path/to/your/PgSA/folder`
+  `make PGSA_PATH=/absolute/path/to/your/PgSA/folder/`
   
 Running HG-CoLoR
 --------------
