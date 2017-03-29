@@ -139,12 +139,12 @@ formatLR="format_$LR"
 log="log"$$
 errlog="errlog"$$
 
-echo "Correcting short reads..."
+echo "Correcting the short reads..."
 quorum -q 33 -t "$nproc" "$shortreads"
 echo "...Done"
 rm quorum_corrected.log
 rm quorum_corrected_mer_database.jf
-echo "Counting k-mers and building the index..."
+echo "Counting the short reads' k-mers and building the index..."
 ./bin/filterShortReads.py quorum_corrected.fa "$k" > long_quorum_corrected.fa
 rm quorum_corrected.fa
 revseq long_quorum_corrected.fa -reverse -complement -outseq RC_long_quorum_corrected.fa 2>> "$errlog"
@@ -158,14 +158,14 @@ sed -i '/>.*/d' "$k-mers-$SR"
 ./PgSAgen "$k-mers-$SR" "$k-mers-$SR" >> "$log" 2>> "$errlog"
 echo "...Done"
 
-echo "Aligning short reads on long reads..."
+echo "Aligning the short reads on the long reads..."
 ./bin/formatLongReads.py "$longreads" > "$formatLR"
 ./bin/blasr long_quorum_corrected.fa "$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > "$aln" 2>> "$errlog"
 rm long_quorum_corrected.fa
 ./bin/filterOutShortAlignments.py "$aln" "$k" > "tmp_$aln"
 mv "tmp_$aln" "$aln"
 echo "...Done"
-echo "Generating sythetic long reads..."
+echo "Generating the sythetic long reads..."
 cut -f 3 "$aln" | sort -u > "$seeds"
 parallel -j "$nproc" ./generateSLR "$aln" "$k" "$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $seeds
 echo "..Done"
