@@ -7,7 +7,6 @@ line = f.readline()
 
 while line != '':
     id = line[:-1]
-    print(id)
     line = f.readline()
     length = len(line) - 1
 
