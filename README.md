@@ -17,7 +17,7 @@ Pre-requisites
 --------------
 
   - A Linux based operating system.
-  - Shell tool GNU Parallel available through tour PATH environment variable (https://www.gnu.org/software/parallel/).
+  - Shell tool GNU Parallel available through your PATH environment variable (https://www.gnu.org/software/parallel/).
   - Emboss binaries accessible through your PATH environment variable (http://emboss.sourceforge.net/download/).
   - Jellyfish binary accessible through your PATH environment variable (https://github.com/gmarcais/Jellyfish).
   - QuorUM binary accessible through your PATH environment variable (https://github.com/gmarcais/Quorum).
