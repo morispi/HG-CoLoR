@@ -4,9 +4,12 @@
 #include <string.h>
 #include <iostream>
 #include <utility>
+#include <vector>
+#include <algorithm> 
+#include <string>
  
 /**
- * Data structure to sore informations about the alignment of a SR
+ * Data structure used to sore informations about the alignment of a seed
  * on a template.
  * alen: alignment length
  * pos: alignment position
@@ -14,79 +17,59 @@
  * matches: number of matching bases
  * seq: DNA sequence of the alignment
  */ 
-typedef struct seed_s {
-	int alen;
+struct seed_t {
 	int pos;
+	int alen;
 	int tlen;
 	int matches;
-	char* seq;
-} seed_t; 
+	std::string seq;
+	
+	bool operator<(const seed_t& s2) const {
+	  return pos < s2.pos;
+	}
+};
 
 /**
- * Turns the string str of length len in uppercase.
- */ 
-char* strToUpper(char* str, int len);
-
-/**
- * Computes the backtrack table of the string s.
+ * Computes the backtrack table of the string s. Auxiliary function used
+ * to compute the overlap length between two strings.
  */
-int* computeBacktrackTable(char* s);
+int* computeBacktrackTable(std::string s);
 
 /**
  * Computes the overlap length between strings s1 and s2.
  */
-int overlapLength(char* s1, char* s2);
-
+int overlapLength(std::string s1, std::string s2);
+ 
 /**
- * Compares the alignment positions of seeds a1 and a2.
- * Returns a negative value if a1 aigned on the left of a2,
- * zero if they aligned at the same position,
- * and a positive value if a1 aligned on the right of a2.
+ * Merges the seeds contained in the vector seeds, if their alignment positions
+ * indicate that they overlap over a greater length than minOverlap, and if 
+ * their overlapping sequences match.
  */ 
-int compareAlignmentsPos(const void* r1, const void* r2);
+void mergeOverlappingPosSeeds(std::vector<seed_t> &seeds, unsigned minOverlap);
+ 
+/**
+* Merges the seeds contained in the vector seeds, if their sequences overlap
+* on a greater length than minOverlap.
+*/ 
+void mergeOverlappingSeqSeeds(std::vector<seed_t> &seeds, int minOverlap);
 
 /**
- * Merges the seeds contained in the structure of size *nb, pointed
- * by seeds if their alignment positions indicate that they overlap
- * on a greater length than minOverap.
- * Returns the updated list of merged seeds, and updates nb accordingly.
- */ 
-seed_t* mergeOverlappingPosSeeds(int* nb, seed_t* seeds, unsigned minOverlap);
-
-/**
- * Merges the seeds contained in the structure of size *nb, pointed
- * by seeds if their sequences overlap on a greater length than minOverap.
- * Returns the updated list of merged seeds, and updates nb accordingly.
- */ 
-seed_t* mergeOverlappingSeqSeeds(int* nb, seed_t* seeds, int minOverlap);
-
-/**
- * Counts the number of alignments reported in the file file.
- */ 
-int countAlignments(char* file);
-
-/**
- * Returns the length of the template of identifier tpl.
- * len: length of the identifier
+ * Returns the length of the sequence of the template of identifier tpl.
+ * len: length of the identifier.
  */ 
 int getTemplateLength(char* tpl, int len);
 
 /**
- * Reads the alignments reported in the file file, and stores them
- * in the structure of size n_seeds, pointed by seeds.
+ * Reads the alignments stored in the file alFile, and 
+ * returns a vector containing the corresponding seeds.
  */
-void readAlignmentFile(char* file, int n_seeds, seed_t** seeds);
-
+std::vector<seed_t> readAlignmentFile(char* alFile);
+ 
 /**
- * Frees the structure seeds of size size.
+ * Reads the alignments stored in the file alFile, and returns a vector
+ * of the seeds, after the two merging steps, allowing a minimum overlap
+ * of length minOverlap.
  */ 
-void freeAlignments(int size, seed_t* seeds);
-
-/**
- * Returns the number and list of seeds contained in the alignment
- * file file, after the two steps of processing, allowing a minimum
- * overlap of length minOverap.
- */ 
-std::pair<int, seed_t*> processSeeds(char* tpl, unsigned minOverlap);
+std::vector<seed_t> processSeeds(char* alFile, unsigned minOverlap);
 
 

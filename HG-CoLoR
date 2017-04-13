@@ -144,7 +144,7 @@ quorum -q 33 -t "$nproc" "$shortreads"
 echo "...Done"
 rm quorum_corrected.log
 rm quorum_corrected_mer_database.jf
-echo "Counting the short reads' k-mers and building the index..."
+echo "Extracting the short reads' k-mers and building the index..."
 ./bin/filterShortReads.py quorum_corrected.fa "$k" > long_quorum_corrected.fa
 rm quorum_corrected.fa
 revseq long_quorum_corrected.fa -reverse -complement -outseq RC_long_quorum_corrected.fa 2>> "$errlog"

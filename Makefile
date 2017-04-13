@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++11
+CFLAGS=-std=c++11 -O3
 PGSA_LIB=$(PGSA_PATH)dist/pgsalib/GNU-Linux-x86/
 PGSA_SRC=$(PGSA_PATH)src
 LDFLAGS=-lPgSA -L$(PGSA_LIB)
