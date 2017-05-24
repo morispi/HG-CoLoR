@@ -257,8 +257,7 @@ namespace SLRgen {
 					if (tplLen - posSrc - src.length() > 0) {
 						extendRight(index, tplLen - posSrc - src.length(), fRes, KLEN, minoverlap);
 					}
-					cout << ">" << tplName << "_" << fragments << endl;
-					cout << fRes << endl;
+					cout << ">" << tplName << "_" << fragments << endl << fRes << endl;
 					fragments++;
 					idSeed = firstSkippedSeed;
 					curSeed = seeds[idSeed];
@@ -282,11 +281,10 @@ namespace SLRgen {
 				extendRight(index, tplLen - posSrc - src.length(), fRes, KLEN, minoverlap);
 			}
 			if (fragments == 1) {
-				cout << ">" << tplName << endl;
+				cout << ">" << tplName << endl << fRes << endl;
 			} else {
-				cout << ">" << tplName << "_" << fragments << endl;
+				cout << ">" << tplName << "_" << fragments << endl << fRes << endl;
 			}
-			cout << fRes << endl;
 		}
 		
 		// Only one seed was mapped on the template
@@ -298,8 +296,7 @@ namespace SLRgen {
 			if (tplLen - posSrc - srcLen > 0) {
 				extendRight(index, tplLen - posSrc - srcLen, src, KLEN, minoverlap);
 			}
-			cout << ">" << tplName << endl;
-			cout << src << endl;
+			cout << ">" << tplName << endl << src << endl;
 		}
      }
 }

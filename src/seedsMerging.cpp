@@ -166,8 +166,15 @@ std::vector<seed_t> processSeeds(char* alFile, unsigned minOverlap) {
   
 	// Sort the seeds according to their mapping positions
 	std::sort(seeds.begin(), seeds.end());
+	//~ std::cerr << seeds.size() << std::endl;
+	
 	// Merge the seeds
 	mergeOverlappingPosSeeds(seeds, minOverlap);
+	
+	//~ for (int i = 0; i < seeds.size(); i++) {
+		//~ std::cerr << seeds[i].pos << ", " << seeds[i].alen << ", " << seeds[i].matches << ", " << seeds[i].seq << std::endl;
+	//~ }
+	
 	mergeOverlappingSeqSeeds(seeds, minOverlap);
 
 	return seeds;

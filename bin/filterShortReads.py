@@ -9,10 +9,10 @@ line = f.readline()
 
 while line != '':
 	id=line
-	line = f.readline()
+	line = f.readline()[:-1]
 	if len(line) >= int(sys.argv[2]):
 		print(id[:-1])
-		print(line[:-1])
+		print(line)
 	line = f.readline()
 
 f.close()

@@ -25,7 +25,18 @@ struct seed_t {
 	std::string seq;
 	
 	bool operator<(const seed_t& s2) const {
-	  return pos < s2.pos;
+	  //~ return pos < s2.pos ? true : false;
+	  if (pos < s2.pos) {
+		  return true;
+	  } else if (pos == s2.pos && alen < s2.alen) {
+		  return true;
+	  } else if (pos == s2.pos && alen == s2.alen && matches < s2.matches) {
+		  return true;
+	  } else if (pos == s2.pos && alen == s2.alen && matches == s2.matches && seq < s2.seq) {
+		  return true;
+	  } else {
+		  return false;
+	  }
 	}
 };
 
