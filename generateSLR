@@ -2,8 +2,10 @@
 
 #Produces a synthetic long read
 
-tmpRes="$1/tmpRes"$$
+partAln="partAln"$$
+tmpRes="tmpRes"$$
 
-./SLRgen -k "$2" -l "$1/$9" -t "$9" -o "$4" -m "$5" -b "$6" -s "$7" "$3" > "$tmpRes"
+grep "$9" "$1" > "$partAln"
+./SLRgen -k "$2" -l "$partAln" -t "$9" -o "$4" -m "$5" -b "$6" -s "$7" "$3" > "$tmpRes"
 cat "$tmpRes" >> "$8"
-rm $tmpRes
+rm $tmpRes $partAln

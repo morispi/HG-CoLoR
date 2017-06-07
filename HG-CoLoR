@@ -2,7 +2,7 @@
 
 #Prints a help message
 function print_help {
-	echo "Usage: $0 [options] --longreads LR.fasta --shortreads SR.fastq --out result.fasta --tmpdir tmp_directory"
+	echo "Usage: $0 [options] --longreads LR.fasta --shortreads SR.fastq --out result.fasta"
 	echo ""
 	echo "	Input:"
 	echo "	LR.fasta:	fasta file of long reads, one sequence per line."
@@ -10,7 +10,6 @@ function print_help {
 	echo "			Warning: only one file must be provided."
 	echo "			If using paired reads, please concatenate them into one single file."
 	echo "	result.fasta:	fasta file where to output the synthetic long reads."
-	echo "	tmp_directoty:	file where to store the temporary files."
 	echo ""
 	echo "	Options:"
 	echo "	--kmer:		k-mer size for the graph construction (default: 64)."
@@ -37,7 +36,6 @@ backtracks=1125
 seedskips=5
 bestn=10
 nproc=$(nproc)
-tmpdir=""
 out=""
 
 #Print help if no argument specified
@@ -64,11 +62,6 @@ while [[ "$1" != "" ]] ; do
 			case "$2" in
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
 				*) out="$2" ; shift 2 ;;
-			esac ;;
-		"--tmpdir")
-			case "$2" in
-				"") echo "Error: $1 expects an argument" ; exit 1 ;;
-				*) tmpdir="$2" ; shift 2 ;;
 			esac ;;
 		"--kmer")
 			case "$2" in
@@ -133,26 +126,11 @@ if [[ $out == "" ]] ; then
 	echo "Error: --out must be specified";
 	exit 1;
 fi
-if [[ $tmpdir = "" ]] ; then
-	echo "Error: --tmpdir must be specified";
-	exit 1;
-fi
 
 #Remove the output file if it already exists
 if [[ -f $out ]] ; then
 	rm $out
 fi
-
-#Create the directory for temporary files, if it does not exist
-if [[ ! -d $tmpdir ]] ; then
-        mkdir $tmpdir
-fi
-
-#Create the subdirectory for Alignments, if it does not exist
-if [[ ! -d $tmpdir/Alignments ]] ; then
-	mkdir $tmpdir/Alignments
-fi
-
 
 #Run the correction pipeline
 
@@ -168,28 +146,28 @@ echo "...Done"
 rm quorum_corrected.log
 rm quorum_corrected_mer_database.jf
 echo "Extracting the short reads' k-mers and building the index..."
-./bin/filterShortReads.py quorum_corrected.fa "$k" > $tmpdir/long_quorum_corrected.fa
+./bin/filterShortReads.py quorum_corrected.fa "$k" > long_quorum_corrected.fa
 rm quorum_corrected.fa
-revseq $tmpdir/long_quorum_corrected.fa -reverse -complement -outseq $tmpdir/RC_long_quorum_corrected.fa 2>> /dev/null
-cat $tmpdir/long_quorum_corrected.fa $tmpdir/RC_long_quorum_corrected.fa > $tmpdir/all_long_quorum_corrected.fa
-jellyfish count -m "$k" -s 500M -t "$nproc" $tmpdir/all_long_quorum_corrected.fa
-rm $tmpdir/RC_long_quorum_corrected.fa
-rm $tmpdir/all_long_quorum_corrected.fa
-jellyfish dump mer_counts.jf > $tmpdir/"$k-mers-$SR"
-rm $tmpdir/mer_counts.jf
-sed -i '/>.*/d' $tmpdir/"$k-mers-$SR"
-./PgSAgen $tmpdir/"$k-mers-$SR" $tmpdir/"$k-mers-$SR" >> /dev/null 2>> /dev/null
+revseq long_quorum_corrected.fa -reverse -complement -outseq RC_long_quorum_corrected.fa 2>> "$errlog"
+cat long_quorum_corrected.fa RC_long_quorum_corrected.fa > all_long_quorum_corrected.fa
+jellyfish count -m "$k" -s 500M -t "$nproc" all_long_quorum_corrected.fa
+rm RC_long_quorum_corrected.fa
+rm all_long_quorum_corrected.fa
+jellyfish dump mer_counts.jf > "$k-mers-$SR"
+rm mer_counts.jf
+sed -i '/>.*/d' "$k-mers-$SR"
+./PgSAgen "$k-mers-$SR" "$k-mers-$SR" >> "$log" 2>> "$errlog"
 echo "...Done"
 
 echo "Aligning the short reads on the long reads..."
-./bin/formatLongReads.py "$longreads" > $tmpdir/"$formatLR"
-./bin/blasr $tmpdir/long_quorum_corrected.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > $tmpdir/"$aln" 2>> /dev/null
-rm $tmpdir/long_quorum_corrected.fa
-./bin/filterOutShortAlignments.py $tmpdir/"$aln" "$k" $tmpdir
-rm $tmpdir/"$aln"
+./bin/formatLongReads.py "$longreads" > "$formatLR"
+./bin/blasr long_quorum_corrected.fa "$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > "$aln" 2>> "$errlog"
+rm long_quorum_corrected.fa
+./bin/filterOutShortAlignments.py "$aln" "$k" > "tmp_$aln"
+mv "tmp_$aln" "$aln"
 echo "...Done"
 echo "Generating the sythetic long reads..."
-cut -f 3 $tmpdir/"$aln" | sort -u > $tmpdir/"$seeds"
-parallel -j "$nproc" ./generateSLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/$seeds
+cut -f 3 "$aln" | sort -u > "$seeds"
+parallel -j "$nproc" ./generateSLR "$aln" "$k" "$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $seeds
 echo "..Done"
-rm -Rf $tmpdir
+rm $log $errlog $aln $formatLR "$k-mers-$SR" "$k-mers-$SR.pgsa" $seeds
