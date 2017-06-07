@@ -186,10 +186,10 @@ echo "Aligning the short reads on the long reads..."
 ./bin/blasr $tmpdir/long_quorum_corrected.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > $tmpdir/"$aln" 2>> /dev/null
 rm $tmpdir/long_quorum_corrected.fa
 ./bin/filterOutShortAlignments.py $tmpdir/"$aln" "$k" $tmpdir
-mv $tmpdir/"tmp_$aln" $tmpdir/"$aln"
+rm $tmpdir/"$aln"
 echo "...Done"
 echo "Generating the sythetic long reads..."
 cut -f 3 $tmpdir/"$aln" | sort -u > $tmpdir/"$seeds"
 parallel -j "$nproc" ./generateSLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/$seeds
 echo "..Done"
-rm $tmpdir/$aln $tmpdir/$formatLR $tmpdir/"$k-mers-$SR" $tmpdir/"$k-mers-$SR.pgsa" $tmpdir/$seeds
+rm -Rf $tmpdir
