@@ -178,7 +178,7 @@ echo "...Done"
 
 echo "Aligning the short reads on the long reads..."
 ./bin/formatLongReads.py "$longreads" > $tmpdir/"$formatLR"
-./bin/blasr long_quorum_corrected.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > $tmpdir/"$aln" 2>> /dev/null
+./bin/blasr $tmpdir/long_quorum_corrected.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > $tmpdir/"$aln" 2>> /dev/null
 rm $tmpdir/long_quorum_corrected.fa
 ./bin/filterOutShortAlignments.py $tmpdir/"$aln" "$k" $tmpdir
 mv $tmpdir/"tmp_$aln" $tmpdir/"$aln"
