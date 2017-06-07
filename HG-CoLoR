@@ -150,7 +150,7 @@ fi
 
 #Create the subdirectory for Alignments, if it does not exist
 if [[ ! -d $tmpdir/Alignments ]] ; then
-	mkdir $tempdir/Alignments
+	mkdir $tmpdir/Alignments
 fi
 
 
