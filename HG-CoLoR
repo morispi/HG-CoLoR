@@ -178,7 +178,6 @@ rm $tmpdir/long_quorum_corrected.fa
 mv $tmpdir/"tmp_$aln" $tmpdir/"$aln"
 echo "...Done"
 echo "Generating the sythetic long reads..."
-echo "$minoverlap"
 cut -f 3 $tmpdir/"$aln" | sort -u > $tmpdir/"$seeds"
 parallel -j "$nproc" ./generateSLR $tmpdir/"$aln" "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/$seeds
 echo "..Done"
