@@ -143,6 +143,12 @@ if [[ -f $out ]] ; then
 	rm $out
 fi
 
+#Create the directory for temporary files, if it does not exist
+if [[ ! -d $tmpdir ]] ; then
+        mkdir $tmpdir
+fi
+
+
 #Run the correction pipeline
 
 aln="$SR""_on_$LR"
@@ -164,7 +170,7 @@ cat $tmpdir/long_quorum_corrected.fa $tmpdir/RC_long_quorum_corrected.fa > $tmpd
 jellyfish count -m "$k" -s 500M -t "$nproc" $tmpdir/all_long_quorum_corrected.fa
 rm $tmpdir/RC_long_quorum_corrected.fa
 rm $tmpdir/all_long_quorum_corrected.fa
-jellyfish dump $tmpdir/mer_counts.jf > $tmpdir/"$k-mers-$SR"
+jellyfish dump mer_counts.jf > $tmpdir/"$k-mers-$SR"
 rm $tmpdir/mer_counts.jf
 sed -i '/>.*/d' $tmpdir/"$k-mers-$SR"
 ./PgSAgen $tmpdir/"$k-mers-$SR" $tmpdir/"$k-mers-$SR" >> /dev/null 2>> /dev/null
