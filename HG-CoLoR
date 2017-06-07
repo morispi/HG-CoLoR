@@ -148,6 +148,11 @@ if [[ ! -d $tmpdir ]] ; then
         mkdir $tmpdir
 fi
 
+#Create the subdirectory for Alignments, if it does not exist
+if [[ ! -d $tmpdir/Alignments ]] ; then
+	mkdir $tempdir/Alignments
+fi
+
 
 #Run the correction pipeline
 
@@ -185,6 +190,6 @@ mv $tmpdir/"tmp_$aln" $tmpdir/"$aln"
 echo "...Done"
 echo "Generating the sythetic long reads..."
 cut -f 3 $tmpdir/"$aln" | sort -u > $tmpdir/"$seeds"
-parallel -j "$nproc" ./generateSLR $tmpdir/"$aln" "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/$seeds
+parallel -j "$nproc" ./generateSLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/$seeds
 echo "..Done"
 rm $tmpdir/$aln $tmpdir/$formatLR $tmpdir/"$k-mers-$SR" $tmpdir/"$k-mers-$SR.pgsa" $tmpdir/$seeds
