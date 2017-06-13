@@ -191,7 +191,7 @@ namespace SLRgen {
 	}
 
 	/**
-	 * Links together the seeds contained in the file tolink, and outputs the associated synthetic long read.
+	 * Links together the seeds contained in the file tolink, and outputs the corrected synthetic long read.
 	 */ 
     void generateSLR(PgSAIndexStandard* index, int KLEN, char* tolink, string tplName, int seedsoverlap, int minoverlap, int backtracks, int seedskips) {
 		pgsaIndex = index;
@@ -250,7 +250,7 @@ namespace SLRgen {
 						firstSkippedSeed = idSeed;
 					}
 				} else {
-					// Couldn't link src to dst after skipping the allowed number of seeds, so, fragment the synthetic long read
+					// Couldn't link src to dst after skipping the allowed number of seeds, so, fragment the corrected long read
 					if (posBeg > 0) {
 						extendLeft(index, posBeg, fRes, KLEN, minoverlap);
 					}

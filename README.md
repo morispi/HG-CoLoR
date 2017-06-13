@@ -42,15 +42,16 @@ Running HG-CoLoR
 --------------
 
 To run HG-CoLoR, run the following command:       
-`./HG-CoLoR --longreads LR.fasta --shortreads SR.fastq --out result.fasta`
+`./HG-CoLoR --longreads LR.fasta --shortreads SR.fastq --out result.fasta --tmpdir tmp_directory`
 
 ### Input
 
-  - LR.fasta: fasta file of long reads, one sequence per line.
-  - SR.fastq: fastq file of short reads.                      
-    Warning: only one file must be provided.                      
+  - LR.fasta:       fasta file of long reads, one sequence per line.
+  - SR.fastq:       fastq file of short reads.
+    Warning: only one file must be provided.
     If using paired reads, please concatenate them into one single file.
-  - result.fasta: fasta file where to output the synthetic long reads.
+  - result.fasta:   fasta file where to output the corrected long reads.
+  - tmp_directory directory where to store the temporary files.
 
 ### Options
 
