@@ -190,7 +190,7 @@ ls $tmpdir/Alignments/ > $tmpdir/"$seeds"
 rm $tmpdir/"$aln"
 echo "...Done"
 echo "Generating the sythetic long reads..."
-parallel -j "$nproc" ./bin/generateSLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/"$seeds"
+parallel -j "$nproc" ./bin/generateCLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/"$seeds"
 echo "...Done"
 echo "Removing temporary files..."
 rm -Rf $tmpdir
