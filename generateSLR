@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#Produces a synthetic long read
+
+partAln="partAln"$$
+tmpRes="tmpRes"$$
+
+grep "$9" "$1" > "$partAln"
+./SLRgen -k "$2" -l "$partAln" -t "$9" -o "$4" -m "$5" -b "$6" -s "$7" "$3" > "$tmpRes"
+cat "$tmpRes" >> "$8"
+rm $tmpRes $partAln
