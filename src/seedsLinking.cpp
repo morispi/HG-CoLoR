@@ -191,7 +191,7 @@ namespace SLRgen {
 	}
 
 	/**
-	 * Links together the seeds contained in the file tolink, and outputs the corrected synthetic long read.
+	 * Links together the seeds contained in the file tolink, and outputs the corrected long read.
 	 */ 
     void generateSLR(PgSAIndexStandard* index, int KLEN, char* tolink, string tplName, int seedsoverlap, int minoverlap, int backtracks, int seedskips) {
 		pgsaIndex = index;

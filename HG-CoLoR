@@ -9,7 +9,7 @@ function print_help {
 	echo "	SR.fastq:	fastq file of short reads."
 	echo "			Warning: only one file must be provided."
 	echo "			If using paired reads, please concatenate them into one single file."
-	echo "	result.fasta:	fasta file where to output the synthetic long reads."
+	echo "	result.fasta:	fasta file where to output the corrected long reads."
 	echo "	tmp_directoty:	directory where to store the temporary files."
 	echo ""
 	echo "	Options:"
