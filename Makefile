@@ -7,7 +7,7 @@ EXECS=PgSAgen SLRgen
 all: $(EXECS)
 
 SLRgen: seedsMerging.o seedsLinking.o SLRgen.o
-	$(CC) -o SLRgen src/seedsMerging.o src/seedsLinking.o src/SLRgen.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
+	$(CC) -o bin/SLRgen src/seedsMerging.o src/seedsLinking.o src/SLRgen.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
 
 seedsMerging.o: src/seedsMerging.cpp
 	$(CC) -o src/seedsMerging.o -c src/seedsMerging.cpp $(CFLAGS)
@@ -19,7 +19,7 @@ SLRgen.o: src/SLRgen.cpp src/seedsLinking.h
 	$(CC) -o src/SLRgen.o -c src/SLRgen.cpp $(CFLAGS) $(LDFLAGS) -I$(PGSA_SRC)
 
 PgSAgen: PgSAgen.o
-	$(CC) -o PgSAgen src/PgSAgen.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
+	$(CC) -o bin/PgSAgen src/PgSAgen.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
 
 PgSAgen.o: src/PgSAgen.cpp
 	$(CC) -o src/PgSAgen.o -c src/PgSAgen.cpp $(CFLAGS) $(LDFLAGS) -I$(PGSA_SRC)

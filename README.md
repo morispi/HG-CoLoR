@@ -1,15 +1,14 @@
 # HG-CoLoR
 HG-CoLoR (Hybrid Graph for the error Correction of Long Reads) is a hybrid method for the
-error correction of long reads that follows the main idea from NaS to produce synthetic
-long reads. Instead of directly being corrected, the long reads are used as templates to
-produce assemblies of related accurate short reads as corrections.
+error correction of long reads that follows the main idea from NaS to produce corrected
+long reads from assemblies of related accurate short reads.
 
 HG-CoLoR however, instead of aligning all the short reads against each other, focuses on
 a seed-and-extend approach based on a hybrid structure between a de Bruijn graph and an
 overlap graph, built from the short reads. This hybrid graph allows to compute perfect
 overlaps of variable length between the short reads' k-mers, and is used to extend and
 link together the seeds, which are short reads that align correctly on the input long
-reads, using them as anchor points. The synthetic long reads are thus produced by directly
+reads, using them as anchor points. The corrected long reads are thus produced by directly
 assembling the k-mers of the short reads during the graph traversal, without using any
 other proper assembly tool.
 
