@@ -1,9 +1,0 @@
-#!/bin/bash
-
-#Produces a synthetic long read
-
-tmpRes="$1/tmpRes"$$
-
-./SLRgen -k "$2" -l "$1/$9" -t "$9" -o "$4" -m "$5" -b "$6" -s "$7" "$3" > "$tmpRes"
-cat "$tmpRes" >> "$8"
-rm $tmpRes
