@@ -50,6 +50,7 @@ To run HG-CoLoR, run the following command:
   - SR.fastq:       fastq file of short reads.
     Warning: only one file must be provided.
     If using paired reads, please concatenate them into one single file.
+
   - result.fasta:   fasta file where to output the corrected long reads.
   - tmp_directory directory where to store the temporary files.
 
@@ -63,6 +64,10 @@ To run HG-CoLoR, run the following command:
       --bestn:          Top alignments to be reported by BLASR (default: 30).
       --nproc:          Number of processes to run in parallel (default: number of cores).
       --help:           Print a help message.
+
+### Short reads coverage
+
+It is recommended to run HG-CoLoR with a 50x coverage of short reads. Results quality tends to highly drop with a higher coverage.
       
 Notes
 --------------
@@ -78,8 +83,8 @@ Pierre Morisse, Thierry Lecroq and Arnaud Lefebvre.
 Reference
 --------------
 
-Currently submitted to Jobim 2017, under the title:               
-HG-CoLoR: A new method for the production of synthetic long reads
+Currently accepted for an oral presentation at Jobim 2017, under the title:               
+HG-CoLoR: Hybrid-Graph for the error Correction of Long Reads
 
 Contact
 --------------

@@ -268,10 +268,10 @@ namespace SLRgen {
 					firstSkippedSeed = -1;
 					skippedSeeds = 0;
 				}
-			}	
+			}
 			idSeed++;
 		}
-		
+
 		// Multiple seeds were mapped on the template and were linked
 		if (!fRes.empty()) {
 			if (posBeg > 0) {

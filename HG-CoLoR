@@ -3,12 +3,16 @@
 #Prints a help message
 function print_help {
 	echo "Usage: $0 [options] --longreads LR.fasta --shortreads SR.fastq --out result.fasta --tmpdir tmp_directory"
+	echo "Note: It is recommended to run HG-CoLoR with a 50x coverage of short reads."
+	echo "Results quality tends to highly drop with a higher coverage."
 	echo ""
 	echo "	Input:"
 	echo "	LR.fasta:	fasta file of long reads, one sequence per line."
 	echo "	SR.fastq:	fastq file of short reads."
 	echo "			Warning: only one file must be provided."
 	echo "			If using paired reads, please concatenate them into one single file."
+	echo "			It is recommended to run HG-CoLoR with a 50x coverage of short reads."
+	echo "			Results quality tends to drop with a higher coverage."
 	echo "	result.fasta:	fasta file where to output the corrected long reads."
 	echo "	tmp_directoty:	directory where to store the temporary files."
 	echo ""
@@ -18,9 +22,10 @@ function print_help {
 	echo "	--minoverlap:	Minimum overlap length to allow the exploration of an edge of the graph (default: k-5)."
 	echo "	--backtracks:	Maximum number of backtracks (default: 1,125)."
 	echo "	--seedskips:	Maximum number of seed skips (default: 5)."
-	echo "	--bestn		Top alignments to be reported by BLASR (default: 10)."
+	echo "	--bestn:	Top alignments to be reported by BLASR (default: 30)."
 	echo "			This parameter should be raised accordingly to the error rate of the long reads."
-	echo "	--nproc		Number of processes to run in parallel (default: number of cores)."
+	echo "	--jfhash: 	Size of the initial Jellyfish hash (default: 200M)."
+	echo "	--nproc:	Number of processes to run in parallel (default: number of cores)."
 	echo "	--help:		Print this help message."
 	exit 1
 }
@@ -35,7 +40,8 @@ seedsoverlap=""
 minoverlap=""
 backtracks=1125
 seedskips=5
-bestn=10
+bestn=30
+jfhash="200M"
 nproc=$(nproc)
 tmpdir=""
 out=""
@@ -105,6 +111,11 @@ while [[ "$1" != "" ]] ; do
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
 				*) nproc="$2" ; shift 2 ;;
 			esac ;;
+		"--jfhash")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) jfhash="$2" ; shift 2 ;;
+			esac ;;
     		--)
 			shift ; break ;;
     		*)
@@ -120,7 +131,7 @@ if [[ $minoverlap = "" ]] ; then
 	minoverlap=$((k-5))
 fi
 
-#Exit if no short reads, no long reads, or no output files have been specified
+#Exit if no short reads, no long reads, no temporary directory, or no output files have been specified
 if [[ $LR == "" ]] ; then
 	echo "Error: --longreads must be specified";
 	exit 1;
@@ -148,50 +159,51 @@ if [[ ! -d $tmpdir ]] ; then
         mkdir $tmpdir
 fi
 
-#Create the subdirectory for Alignments, if it does not exist
+#Create the subdirectory for alignments files, if it does not exist
 if [[ ! -d $tmpdir/Alignments ]] ; then
 	mkdir $tmpdir/Alignments
 fi
 
-
-#Run the correction pipeline
-
-aln="$SR_on_$LR"
+#Create temporary files
+aln=$SR"_on_$LR"
 seeds="seeds_"$$
 formatLR="format_$LR"
 
-echo "Correcting the short reads..."
-quorum --prefix $tmpdir/quorum_corrected -q 33 -t "$nproc" "$shortreads"
-echo "...Done"
-rm $tmpdir/quorum_corrected.log
-rm $tmpdir/quorum_corrected_mer_database.jf
-echo "Extracting the short reads' k-mers and building the graph..."
-./bin/filterShortReads.py $tmpdir/quorum_corrected.fa "$k" > $tmpdir/long_quorum_corrected.fa
-rm $tmpdir/quorum_corrected.fa
-revseq $tmpdir/long_quorum_corrected.fa -reverse -complement -outseq $tmpdir/RC_long_quorum_corrected.fa 2>> /dev/null
-cat $tmpdir/long_quorum_corrected.fa $tmpdir/RC_long_quorum_corrected.fa > $tmpdir/all_long_quorum_corrected.fa
-jellyfish count -m "$k" -s 500M -t "$nproc" -o $tmpdir/mer_counts.jf $tmpdir/all_long_quorum_corrected.fa
-rm $tmpdir/RC_long_quorum_corrected.fa
-rm $tmpdir/all_long_quorum_corrected.fa
-jellyfish dump $tmpdir/mer_counts.jf > $tmpdir/"$k-mers-$SR"
-rm $tmpdir/mer_counts.jf
-sed -i '/>.*/d' $tmpdir/"$k-mers-$SR"
-./bin/PgSAgen $tmpdir/"$k-mers-$SR" $tmpdir/"$k-mers-$SR" >> /dev/null 2>> /dev/null
-echo "...Done"
+#Get the path to HG-CoLoR's folder
+hgs=$(realpath "$0")
+hgf=$(dirname $hgs)
 
-echo "Aligning the short reads on the long reads..."
-./bin/formatLongReads.py "$longreads" > $tmpdir/"$formatLR"
-./bin/blasr $tmpdir/long_quorum_corrected.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > $tmpdir/"$aln" 2>> /dev/null
-rm $tmpdir/long_quorum_corrected.fa
+#Run the correction pipeline
+echo "["$(date)"] Correcting the short reads"
+quorum --prefix $tmpdir/quorum_corrected -q 33 -t "$nproc" "$shortreads"
+
+echo "["$(date)"] Extracting the short reads' k-mers and building the graph"
+$hgf/bin/filterShortReads.py $tmpdir/quorum_corrected.fa "$k" > $tmpdir/long_quorum_corrected.fa
+echo "----- revseq -----" >> HG-CoLoR.stderr
+revseq $tmpdir/long_quorum_corrected.fa -reverse -complement -outseq $tmpdir/RC_long_quorum_corrected.fa 2>> HG-CoLoR.stderr
+cat $tmpdir/long_quorum_corrected.fa $tmpdir/RC_long_quorum_corrected.fa > $tmpdir/all_long_quorum_corrected.fa
+jellyfish count -m "$k" -s "$jfhash" -t "$nproc" -o $tmpdir/mer_counts.jf $tmpdir/all_long_quorum_corrected.fa
+jellyfish dump $tmpdir/mer_counts.jf > $tmpdir/"$k-mers-$SR"
+sed -i '/>.*/d' $tmpdir/"$k-mers-$SR"
+echo "----- PgSAgen -----" >> HG-CoLoR.stdout
+echo "----- PgSAgen -----" >> HG-CoLoR.stderr
+$hgf/bin/PgSAgen $tmpdir/"$k-mers-$SR" $tmpdir/"$k-mers-$SR" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+
+echo "["$(date)"] Aligning the short reads on the long reads"
+$hgf/bin/formatLongReads.py "$longreads" > $tmpdir/"$formatLR"
+echo "----- blasr -----" >> HG-CoLoR.stderr
+$hgf/bin/blasr $tmpdir/long_quorum_corrected.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > $tmpdir/"$aln" 2>> HG-CoLoR.stderr
+
+echo "["$(date)"] Removing short alignments"
 sort -T $tmpdir/ -k 3 $tmpdir/"$aln" > $tmpdir/"tmp_$aln"
 mv $tmpdir/"tmp_$aln" $tmpdir/"$aln"
-./bin/filterOutShortAlignments.py $tmpdir/"$aln" "$k" $tmpdir/Alignments/
+$hgf/bin/filterOutShortAlignments.py $tmpdir/"$aln" "$k" $tmpdir/Alignments/
 ls $tmpdir/Alignments/ > $tmpdir/"$seeds"
-rm $tmpdir/"$aln"
-echo "...Done"
-echo "Generating the sythetic long reads..."
-parallel -j "$nproc" ./bin/generateCLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/"$seeds"
-echo "...Done"
-echo "Removing temporary files..."
+
+echo "["$(date)"] Generating the corrected long reads"
+parallel -j "$nproc" $hgf/bin/generateCLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/"$seeds"
+
+echo "["$(date)"] Removing temporary files"
 rm -Rf $tmpdir
-echo "...Done"
+
+echo "["$(date)"] Exiting" 
