@@ -170,7 +170,7 @@ seeds="seeds_"$$
 formatLR="format_$LR"
 
 #Get the path to HG-CoLoR's folder
-hgs=$(realpath "$0")
+hgs=$(readlink -f "$0")
 hgf=$(dirname $hgs)
 
 #Run the correction pipeline
