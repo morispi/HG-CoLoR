@@ -1,2 +1,3 @@
 bin/CLRgen
 bin/PgSAgen
+src/*.o
