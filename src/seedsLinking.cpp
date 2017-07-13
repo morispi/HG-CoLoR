@@ -204,6 +204,7 @@ namespace SLRgen {
 		seed_t curSeed;
 		int idSeed, posBeg, posSrc, posDst, tplLen, dist, curback, linked;
 		string fRes = string();
+		string outLRs = string();
 		
 		std::vector<seed_t> seeds = processSeeds(tolink, seedsoverlap);
 		idSeed = 0;
@@ -257,7 +258,8 @@ namespace SLRgen {
 					if (tplLen - posSrc - src.length() > 0) {
 						extendRight(index, tplLen - posSrc - src.length(), fRes, KLEN, minoverlap);
 					}
-					cout << ">" << tplName << "_" << fragments << endl << fRes << endl;
+					//~ cout << ">" << tplName << "_" << fragments << endl << fRes << endl;
+					outLRs += ">" + tplName + "_" + fragments + endl + fRes + endl;
 					fragments++;
 					idSeed = firstSkippedSeed;
 					curSeed = seeds[idSeed];

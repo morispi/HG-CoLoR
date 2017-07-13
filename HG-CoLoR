@@ -18,6 +18,7 @@ function print_help {
 	echo ""
 	echo "	Options:"
 	echo "	--kmer:		k-mer size for the graph construction (default: 64)."
+	echo "	--solid:	Minimum number of occurrences to consider a k-mer as solid (default: 5)."
 	echo "	--seedsoverlap:	Minimum overlap length to allow the merging of two overlapping seeds (default: k-1)."
 	echo "	--minoverlap:	Minimum overlap length to allow the exploration of an edge of the graph (default: k-5)."
 	echo "	--backtracks:	Maximum number of backtracks (default: 1,125)."
@@ -36,6 +37,7 @@ LR=""
 shortreads=""
 SR=""
 k=64
+solid=5
 seedsoverlap=""
 minoverlap=""
 backtracks=1125
@@ -80,6 +82,11 @@ while [[ "$1" != "" ]] ; do
 			case "$2" in
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
 				*) k="$2" ; shift 2 ;;
+			esac ;;
+		"--solid")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) solid="$2" ; shift 2 ;;
 			esac ;;
 		"--seedsoverlap")
 			case "$2" in
@@ -166,7 +173,7 @@ fi
 
 #Create temporary files
 aln=$SR"_on_$LR"
-seeds="seeds_"$$
+seeds="seeds"
 formatLR="format_$LR"
 
 #Get the path to HG-CoLoR's folder
@@ -177,13 +184,18 @@ hgf=$(dirname $hgs)
 echo "["$(date)"] Correcting the short reads"
 quorum --prefix $tmpdir/quorum_corrected -q 33 -t "$nproc" "$shortreads"
 
-echo "["$(date)"] Extracting the short reads' k-mers and building the graph"
+echo "["$(date)"] Removing short reads containing weak k-mers"
 $hgf/bin/filterShortReads.py $tmpdir/quorum_corrected.fa "$k" > $tmpdir/long_quorum_corrected.fa
 echo "----- revseq -----" >> HG-CoLoR.stderr
 revseq $tmpdir/long_quorum_corrected.fa -reverse -complement -outseq $tmpdir/RC_long_quorum_corrected.fa 2>> HG-CoLoR.stderr
 cat $tmpdir/long_quorum_corrected.fa $tmpdir/RC_long_quorum_corrected.fa > $tmpdir/all_long_quorum_corrected.fa
 jellyfish count -m "$k" -s "$jfhash" -t "$nproc" -o $tmpdir/mer_counts.jf $tmpdir/all_long_quorum_corrected.fa
-jellyfish dump $tmpdir/mer_counts.jf > $tmpdir/"$k-mers-$SR"
+$hgf/bin/getKmersCounts $tmpdir/mer_counts.jf $tmpdir/long_quorum_corrected.fa > $tmpdir/long_quorum_corrected.counts
+$hgf/bin/removeReadsWithWeakKmers.py $tmpdir/long_quorum_corrected.fa $tmpdir/long_quorum_corrected.counts $solid > $tmpdir/good_long_quorum_corrected.fa
+mv $tmpdir/good_long_quorum_corrected.fa $tmpdir/long_quorum_corrected.fa
+
+echo "["$(date)"] Building the graph"
+jellyfish dump -L $solid $tmpdir/mer_counts.jf > $tmpdir/"$k-mers-$SR"
 sed -i '/>.*/d' $tmpdir/"$k-mers-$SR"
 echo "----- PgSAgen -----" >> HG-CoLoR.stdout
 echo "----- PgSAgen -----" >> HG-CoLoR.stderr
@@ -206,4 +218,4 @@ parallel -j "$nproc" $hgf/bin/generateCLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa
 echo "["$(date)"] Removing temporary files"
 rm -Rf $tmpdir
 
-echo "["$(date)"] Exiting" 
+echo "["$(date)"] Exiting"

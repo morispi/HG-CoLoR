@@ -27,6 +27,7 @@ Dependencies
 
 The blasr binary comes from the blasr software. Copyright notice is given in the file
 bin/blasr-license.
+The getKmersCounts binary comes from Jelyfish2.2.6.
 The PgSAgen.cpp file was copied, and the SLRgen.cpp, seedsLinking.cpp, and seedsLinking.h
 files were adapted from the PgSA sources.
   
