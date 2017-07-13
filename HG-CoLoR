@@ -25,7 +25,7 @@ function print_help {
 	echo "	--seedskips:	Maximum number of seed skips (default: 5)."
 	echo "	--bestn:	Top alignments to be reported by BLASR (default: 30)."
 	echo "			This parameter should be raised accordingly to the error rate of the long reads."
-	echo "	--jfhash: 	Size of the initial Jellyfish hash (default: 200M)."
+	echo "	--kmcmem: 	Maximum amount of RAM for KMC, in GB (default: 12)."
 	echo "	--nproc:	Number of processes to run in parallel (default: number of cores)."
 	echo "	--help:		Print this help message."
 	exit 1
@@ -43,7 +43,7 @@ minoverlap=""
 backtracks=1125
 seedskips=5
 bestn=30
-jfhash="200M"
+kmcmem="12"
 nproc=$(nproc)
 tmpdir=""
 out=""
@@ -118,7 +118,7 @@ while [[ "$1" != "" ]] ; do
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
 				*) nproc="$2" ; shift 2 ;;
 			esac ;;
-		"--jfhash")
+		"--kmcmem")
 			case "$2" in
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
 				*) jfhash="$2" ; shift 2 ;;
@@ -182,21 +182,30 @@ hgf=$(dirname $hgs)
 
 #Run the correction pipeline
 echo "["$(date)"] Correcting the short reads"
-quorum --prefix $tmpdir/quorum_corrected -q 33 -t "$nproc" "$shortreads"
+echo "----- QuorUM -----" >> HG-CoLoR.stdout
+echo "----- QuorUM -----" >> HG-CoLoR.stderr
+quorum --prefix $tmpdir/quorum_corrected -q 33 -t "$nproc" "$shortreads" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 
 echo "["$(date)"] Removing short reads containing weak k-mers"
 $hgf/bin/filterShortReads.py $tmpdir/quorum_corrected.fa "$k" > $tmpdir/long_quorum_corrected.fa
+echo "----- revseq -----" >> HG-CoLoR.stdout
 echo "----- revseq -----" >> HG-CoLoR.stderr
-revseq $tmpdir/long_quorum_corrected.fa -reverse -complement -outseq $tmpdir/RC_long_quorum_corrected.fa 2>> HG-CoLoR.stderr
+revseq $tmpdir/long_quorum_corrected.fa -reverse -complement -outseq $tmpdir/RC_long_quorum_corrected.fa >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+sed -i ':a; $!N; /^>/!s/\n\([^>]\)/\1/; ta; P; D' $tmpdir/RC_long_quorum_corrected.fa
 cat $tmpdir/long_quorum_corrected.fa $tmpdir/RC_long_quorum_corrected.fa > $tmpdir/all_long_quorum_corrected.fa
-jellyfish count -m "$k" -s "$jfhash" -t "$nproc" -o $tmpdir/mer_counts.jf $tmpdir/all_long_quorum_corrected.fa
-$hgf/bin/getKmersCounts $tmpdir/mer_counts.jf $tmpdir/long_quorum_corrected.fa > $tmpdir/long_quorum_corrected.counts
-$hgf/bin/removeReadsWithWeakKmers.py $tmpdir/long_quorum_corrected.fa $tmpdir/long_quorum_corrected.counts $solid > $tmpdir/good_long_quorum_corrected.fa
+echo "----- KMC -----" >> HG-CoLoR.stdout
+echo "----- KMC -----" >> HG-CoLoR.stderr
+kmc -m"$kmcmem" -k"$k" -b -fa $tmpdir/all_long_quorum_corrected.fa $tmpdir/mers.db $tmpdir >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+echo "----- KMC_tools -----" >> HG-CoLoR.stdout
+echo "----- KMC_tools -----" >> HG-CoLoR.stderr
+kmc_tools filter $tmpdir/mers.db -ci"$solid" $tmpdir/long_quorum_corrected.fa -ci1.0 -fa $tmpdir/good_long_quorum_corrected.fa -fa >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 mv $tmpdir/good_long_quorum_corrected.fa $tmpdir/long_quorum_corrected.fa
 
 echo "["$(date)"] Building the graph"
-jellyfish dump -L $solid $tmpdir/mer_counts.jf > $tmpdir/"$k-mers-$SR"
-sed -i '/>.*/d' $tmpdir/"$k-mers-$SR"
+echo "----- KMC_dump -----" >> HG-CoLoR.stdout
+echo "----- KMC_dump -----" >> HG-CoLoR.stderr
+kmc_dump -ci"$solid" $tmpdir/mers.db $tmpdir/"dumped_$k-mers-$SR" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+cut -f 1 $tmpdir/"dumped_$k-mers-$SR" > $tmpdir/"$k-mers-$SR"
 echo "----- PgSAgen -----" >> HG-CoLoR.stdout
 echo "----- PgSAgen -----" >> HG-CoLoR.stderr
 $hgf/bin/PgSAgen $tmpdir/"$k-mers-$SR" $tmpdir/"$k-mers-$SR" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr

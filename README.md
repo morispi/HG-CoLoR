@@ -18,7 +18,7 @@ Pre-requisites
   - A Linux based operating system.
   - Shell tool GNU Parallel available through your PATH environment variable (https://www.gnu.org/software/parallel/).
   - Emboss binaries accessible through your PATH environment variable (http://emboss.sourceforge.net/download/).
-  - Jellyfish binary accessible through your PATH environment variable (https://github.com/gmarcais/Jellyfish).
+  - KMC3 binaries (kmc, kmc_tools and kmc_dump) accessible through your PATH environment variable (https://github.com/refresh-bio/KMC).
   - QuorUM binary accessible through your PATH environment variable (https://github.com/gmarcais/Quorum).
   - PgSA directory accessible somewhere on your computer (https://github.com/kowallus/PgSA).
   
@@ -58,11 +58,13 @@ To run HG-CoLoR, run the following command:
 ### Options
 
       --kmer:           k-mer size for the graph construction (default: 64).
+      --solid:		Minimum number of occurrences to consider a k-mer as solid (default: 5).
       --seedsoverlap:   Minimum overlap length to allow the merging of two overlapping seeds (default: k-1).
       --minoverlap:     Minimum overlap length to allow the exploration of an edge of the graph (default: k-5).
       --backtracks:     Maximum number of backtracks (default: 1,125).
       --seedskips:      Maximum number of seed skips (default: 5).
       --bestn:          Top alignments to be reported by BLASR (default: 30).
+      --kmcmem:		Maximum amount of RAM for KMC, in GB (default: 12)
       --nproc:          Number of processes to run in parallel (default: number of cores).
       --help:           Print a help message.
 

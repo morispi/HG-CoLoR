@@ -286,7 +286,7 @@ namespace SLRgen {
 				cout << ">" << tplName << "_" << fragments << endl << fRes << endl;
 			}
 		}
-
+		
 		// Only one seed was mapped on the template
 		if (seeds.size() < 2) {
 			int srcLen = src.length();
@@ -300,3 +300,4 @@ namespace SLRgen {
 		}
      }
 }
+
