@@ -3,8 +3,9 @@
 #Prints a help message
 function print_help {
 	echo "Usage: $0 [options] --longreads LR.fasta --shortreads SR.fastq --out result.fasta --tmpdir tmp_directory"
-	echo "Note: It is recommended to run HG-CoLoR with a 50x coverage of short reads."
-	echo "Results quality tends to highly drop with a higher coverage."
+	echo ""
+	echo "Note: HG-CoLoR default parameters are adapted for a 50x coverage set of short reads with a 1% error rate."
+	echo "Please modify the parameters, in particular the --solid and --bestn ones, as indicated below if using a set of short reads with a much higher coverage and/or a highly different error rate."
 	echo ""
 	echo "	Input:"
 	echo "	LR.fasta:	fasta file of long reads, one sequence per line."

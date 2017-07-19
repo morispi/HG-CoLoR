@@ -59,7 +59,7 @@ To run HG-CoLoR, run the following command:
       --kmer:           k-mer size for the graph construction (default: 64).
       --solid:          Minimum number of occurrences to consider a k-mer as solid (default: 5).
                         This parameter should be raised accordingly to the short reads coverage and accuracy.
-                        Its default value is adapted for a 50x coverage of short reads with a 1% error rate.
+                        Its default value is adapted for a 50x coverage set of short reads with a 1% error rate.
       --seedsoverlap:   Minimum overlap length to allow the merging of two overlapping seeds (default: k-1).
       --minoverlap:     Minimum overlap length to allow the exploration of an edge of the graph (default: k-5).
       --backtracks:     Maximum number of backtracks (default: 1,000).
@@ -69,13 +69,14 @@ To run HG-CoLoR, run the following command:
       --bestn:          Top alignments to be reported by BLASR (default: 30).
                         This parameter should be raised accordingly to the short reads coverage.
                         Its default value is adapted for a 50x coverage of short reads.
-      --kmcmem:		Maximum amount of RAM for KMC, in GB (default: 12)
+      --kmcmem:         Maximum amount of RAM for KMC, in GB (default: 12)
       --nproc:          Number of processes to run in parallel (default: number of cores).
       --help:           Print a help message.
 
-### Short reads coverage
+### Short reads coverage and accuracy
 
-It is recommended to run HG-CoLoR with a 50x coverage of short reads. Results quality tends to highly drop with a higher coverage.
+HG-CoLoR default parameters are adapted for a 50x coverage set of short reads with a 1% error rate. Please modify the parameters, in particular the --solid and --bestn ones,
+as indicated above if using a set of short reads with a much higher coverage and/or a highly different error rate.
       
 Notes
 --------------
