@@ -18,13 +18,18 @@ function print_help {
 	echo ""
 	echo "	Options:"
 	echo "	--kmer:		k-mer size for the graph construction (default: 64)."
-	echo "	--solid:	Minimum number of occurrences to consider a k-mer as solid (default: 5)."
+	echo "	--solid:	Minimum number of occurrences to consider a k-mer as solid, after short reads correction (default: 5)."
+	echo "			This parameter should be raised accordingly to the short reads coverage and accuracy."
+	echo "			Its default value is adapted for a 50x coverage of short reads with a 1% error rate."
 	echo "	--seedsoverlap:	Minimum overlap length to allow the merging of two overlapping seeds (default: k-1)."
 	echo "	--minoverlap:	Minimum overlap length to allow the exploration of an edge of the graph (default: k-5)."
-	echo "	--backtracks:	Maximum number of backtracks (default: 1,125)."
+	echo "	--backtracks:	Maximum number of backtracks (default: 1,000)."
+	echo "			Raising this parameter will result in less fragmented corrected long reads."
+	echo "			However, it will also increase the runtime, and may create chimeric linkings between the seeds."
 	echo "	--seedskips:	Maximum number of seed skips (default: 5)."
 	echo "	--bestn:	Top alignments to be reported by BLASR (default: 30)."
-	echo "			This parameter should be raised accordingly to the error rate of the long reads."
+	echo "			This parameter should be raised accordingly to the short reads coverage."
+	echo "			Its default value is adapted for a 50x coverage of short reads."
 	echo "	--kmcmem: 	Maximum amount of RAM for KMC, in GB (default: 12)."
 	echo "	--nproc:	Number of processes to run in parallel (default: number of cores)."
 	echo "	--help:		Print this help message."
@@ -40,7 +45,7 @@ k=64
 solid=5
 seedsoverlap=""
 minoverlap=""
-backtracks=1125
+backtracks=1000
 seedskips=5
 bestn=30
 kmcmem="12"

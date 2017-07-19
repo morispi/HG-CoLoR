@@ -259,7 +259,7 @@ namespace SLRgen {
 					}
 					cout << ">" << tplName << "_" << fragments << endl << fRes << endl;
 					fragments++;
-					idSeed = firstSkippedSeed;
+					idSeed = firstSkippedSeed != -1 ? firstSkippedSeed : idSeed + 1;
 					curSeed = seeds[idSeed];
 					src = curSeed.seq;
 					posSrc = curSeed.pos;

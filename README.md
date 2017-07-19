@@ -57,12 +57,18 @@ To run HG-CoLoR, run the following command:
 ### Options
 
       --kmer:           k-mer size for the graph construction (default: 64).
-      --solid:		Minimum number of occurrences to consider a k-mer as solid (default: 5).
+      --solid:          Minimum number of occurrences to consider a k-mer as solid (default: 5).
+                        This parameter should be raised accordingly to the short reads coverage and accuracy.
+                        Its default value is adapted for a 50x coverage of short reads with a 1% error rate.
       --seedsoverlap:   Minimum overlap length to allow the merging of two overlapping seeds (default: k-1).
       --minoverlap:     Minimum overlap length to allow the exploration of an edge of the graph (default: k-5).
-      --backtracks:     Maximum number of backtracks (default: 1,125).
+      --backtracks:     Maximum number of backtracks (default: 1,000).
+                        Raising this parameter will result in less fragmented corrected long reads.
+                        However, it will also increase the runtime, and may create chimeric linkings between the seeds.
       --seedskips:      Maximum number of seed skips (default: 5).
       --bestn:          Top alignments to be reported by BLASR (default: 30).
+                        This parameter should be raised accordingly to the short reads coverage.
+                        Its default value is adapted for a 50x coverage of short reads.
       --kmcmem:		Maximum amount of RAM for KMC, in GB (default: 12)
       --nproc:          Number of processes to run in parallel (default: number of cores).
       --help:           Print a help message.
