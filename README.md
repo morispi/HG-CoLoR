@@ -92,8 +92,11 @@ Pierre Morisse, Thierry Lecroq and Arnaud Lefebvre.
 Reference
 --------------
 
-Currently accepted for an oral presentation at Jobim 2017, under the title:               
-HG-CoLoR: Hybrid-Graph for the error Correction of Long Reads
+If you use HG-CoLoR in your research, please cite:
+
+Pierre Morisse, Thierry Lecroq and Arnaud Lefebvre. HG-CoLoR: Hybrid-Graph
+for the error Correction of Long Reads, Actes des Journées Ouvertes Biologie
+Informatique et Mathématiques, 2017.
 
 Contact
 --------------
