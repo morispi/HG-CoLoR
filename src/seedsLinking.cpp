@@ -237,13 +237,15 @@ namespace SLRgen {
 				}
 				src = dst;
 				posSrc = posDst;
+				firstSkippedSeed = -1;
+				skippedSeeds = 0;
 			} else {
 				// No seeds linked so far, skip the source
 				if (fRes.empty()) {
 					src = dst;
 					posSrc = posDst;
 					posBeg = posSrc;
-				// Seeds have been linked previously, skip the source if the allowed number of skips isn't reached
+				// Seeds have been linked previously, skip the destination if the allowed number of skips isn't reached
 				} else if (skippedSeeds < seedskips) {
 					skippedSeeds++;
 					if (firstSkippedSeed == -1) {
@@ -259,7 +261,9 @@ namespace SLRgen {
 					}
 					cout << ">" << tplName << "_" << fragments << endl << fRes << endl;
 					fragments++;
-					idSeed = firstSkippedSeed != -1 ? firstSkippedSeed : idSeed + 1;
+					if (firstSkippedSeed != -1) {
+						idSeed = firstSkippedSeed;
+					}
 					curSeed = seeds[idSeed];
 					src = curSeed.seq;
 					posSrc = curSeed.pos;
