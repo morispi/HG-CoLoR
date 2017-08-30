@@ -120,12 +120,11 @@ vector<seed_t> readAlignmentFile(string alFile) {
 	string seq;
 	string line;
 	vector<seed_t> seeds;
-	istringstream iss;
 	string token;
 	
 	ifstream f(alFile);
 	while(getline(f, line)) {
-		iss = istringstream(line);
+		istringstream iss(line);
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');

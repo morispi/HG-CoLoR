@@ -229,7 +229,6 @@ namespace CLRgen {
 		string src, dst, kMer1, kMer2, fullLinkingSeq;
 		ostringstream fRes;
 		set<int> visited;
-	
 		
 		vector<seed_t> seeds = processSeeds(tolink, seedsoverlap);
 		idSeed = 0;
@@ -243,6 +242,7 @@ namespace CLRgen {
 		if (seedskips > (seeds.size() - 1) - idSeed - 1) {
 			seedskips = (seeds.size() - 1) - idSeed - 1;
 		}
+		
 		
 		idSeed++;
 		// Iterate through the seeds and link them
@@ -342,9 +342,7 @@ namespace CLRgen {
 			if (tplLen - posSrc - srcLen > 0) {
 				extendRight(tplLen - posSrc - srcLen, src);
 			}
-			//~ cout << ">" << tplId << endl << src << endl;
 			fRes << ">" << tplId << endl << src << endl;
-			//~ fRes = fRes + ">" + tplId + endl + src + endl;
 		}
 		
 		cout << fRes.str();
