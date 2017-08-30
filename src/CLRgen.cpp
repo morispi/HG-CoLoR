@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     string kParam;
     size_t pos;
     size_t found;
-    char* tolink;
+    string tolink;
     string tpl;
     int seedsoverlap;
     int minoverlap;
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 
     PgSAIndexStandard* idx = prepareIndex(idxFile, cacheFile);
     
-    SLRgen::generateSLR(idx, k, tolink, tpl, seedsoverlap, minoverlap, backtracks, seedskips);
+    CLRgen::generateCLR(idx, k, tolink, tpl, seedsoverlap, minoverlap, backtracks, seedskips);
     
     delete(idx);
 
