@@ -1,42 +1,36 @@
 # HG-CoLoR
-HG-CoLoR (Hybrid Graph for the error Correction of Long Reads) is a hybrid method for the
-error correction of long reads that follows the main idea from NaS to produce corrected
-long reads from assemblies of related accurate short reads.
+HG-CoLoR (Hybrid method based on a variable-order de bruijn Graph for the error Correction of Long Reads)
+is a hybrid method for the error correction of long reads that both aligns the short reads to the long reads,
+and uses a variable-order de Bruijn graph, in a seed-and-extend approach. The seeds, found by aligning
+the short reads to the long reads, are used as anchor points on the variable-order de Bruijn graph, built
+from the short reads, which is traversed in order to find paths allowing to link seeds together. Such paths
+between seeds dictate corrections for the missing part of the long reads, that are not covered by seeds.
 
-HG-CoLoR however, instead of aligning all the short reads against each other, focuses on
-a seed-and-extend approach based on a hybrid structure between a de Bruijn graph and an
-overlap graph, built from the short reads. This hybrid graph allows to compute perfect
-overlaps of variable length between the short reads' k-mers, and is used to extend and
-link together the seeds, which are short reads that align correctly on the input long
-reads, using them as anchor points. The corrected long reads are thus produced by directly
-assembling the k-mers of the short reads during the graph traversal, without using any
-other proper assembly tool.
-
-Pre-requisites
+Requirments
 --------------
 
   - A Linux based operating system.
-  - Shell tool GNU Parallel available through your PATH environment variable (https://www.gnu.org/software/parallel/).
+  - Python3.
+  - Genometools binaries accessible through your PATH environment variable (http://genometools.org/).
   - Emboss binaries accessible through your PATH environment variable (http://emboss.sourceforge.net/download/).
-  - KMC3 binaries (kmc, kmc_tools and kmc_dump) accessible through your PATH environment variable (https://github.com/refresh-bio/KMC).
+  - KMC3 binaries accessible through your PATH environment variable (https://github.com/refresh-bio/KMC).
   - QuorUM binary accessible through your PATH environment variable (https://github.com/gmarcais/Quorum).
-  - PgSA directory accessible somewhere on your computer (https://github.com/kowallus/PgSA).
   
 Dependencies
 --------------
 
 The blasr binary comes from the blasr software. Copyright notice is given in the file
 bin/blasr-license.
-The PgSAgen.cpp file was copied, and the SLRgen.cpp, seedsLinking.cpp, and seedsLinking.h
-files were adapted from the PgSA sources.
   
 Installation
 --------------
 
-  1. Go to the PgSA directory, and compile the PgSA library:  
-  `make build CONF=pgsalib`
-  2. Go back to the HG-CoLoR directory and run:             
-  `make PGSA_PATH=/absolute/path/to/your/PgSA/folder/`
+  `git clone https://github.com/pierre-morisse/HG-CoLoR`
+  `git submodule init`
+  `git submodule update`
+  `cd KMC/ && make -j`
+  `cd ../PgSA/ && make build CONF=pgsalib`
+  `cd .. && make` 
   
 Running HG-CoLoR
 --------------
@@ -56,17 +50,17 @@ To run HG-CoLoR, run the following command:
 
 ### Options
 
-      --kmer:           k-mer size for the graph construction (default: 64).
-      --solid:          Minimum number of occurrences to consider a k-mer as solid (default: 5).
+      --maxorder:       Maximum order of the variable-order de Bruijn graph (default: 100).
+      --solid:          Minimum number of occurrences to consider a k-mer as solid (default: 2).
                         This parameter should be raised accordingly to the short reads coverage and accuracy.
                         Its default value is adapted for a 50x coverage set of short reads with a 1% error rate.
       --seedsoverlap:   Minimum overlap length to allow the merging of two overlapping seeds (default: k-1).
-      --minoverlap:     Minimum overlap length to allow the exploration of an edge of the graph (default: k-5).
-      --backtracks:     Maximum number of backtracks (default: 1,000).
+      --minoverlap:     Minimum order of the variable-order de Bruijn graph (default: maxorder/2).
+      --branches:       Maximum number of branches exploration (default: 1,500).
                         Raising this parameter will result in less fragmented corrected long reads.
                         However, it will also increase the runtime, and may create chimeric linkings between the seeds.
       --seedskips:      Maximum number of seed skips (default: 5).
-      --bestn:          Top alignments to be reported by BLASR (default: 30).
+      --bestn:          Top alignments to be reported by BLASR (default: 50).
                         This parameter should be raised accordingly to the short reads coverage.
                         Its default value is adapted for a 50x coverage of short reads.
       --kmcmem:         Maximum amount of RAM for KMC, in GB (default: 12)

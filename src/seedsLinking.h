@@ -1,5 +1,5 @@
-#ifndef SLRGEN_H
-#define	SLRGEN_H
+#ifndef SEEDSLNK_H
+#define	SEEDSLNK_H
 
 #include <iostream>
 #include "test/testdata.h"
@@ -10,49 +10,56 @@ using namespace PgSAIndex;
 
 namespace CLRgen {
 	/**
-     * Returne the neighbours of the k-mer kMer in the graph.
+     * Returns the neighbours of the k-mer kMer in the de Bruijn graph of order k.
      * left: set to 1 to get the neighbours on the left of the k-mer,
-     * and to 0 to get the neighbours of the right of the k-mer.
+     * and to 0 to get the neighbours on the right of the k-mer.
      */ 
-    vector<StandardOccurrence> getNeighbours(string kMer, int left);
+    vector<string> getNeighbours(string kMer, int left);
     
     /**
      * Extends the CLR LR on the left, on a maximum distance of extLen.
      */ 
-    void extendLeft(int extLen, string &LR);
+    void extendLeft(unsigned extLen, string &LR);
     
     /**
      * Extends the CLR LR on the right, on a maximum distance of extLen.
      */
-    void extendRight(int extLen, string &LR);
+    void extendRight(unsigned extLen, string &LR);
     
     /**
-     * Links src to dst by traversing the graph.
-     * Parametrs:
-     * src: source seed
-     * dst: destination seed
-     * curK: current k-mer size for this linking
-     * visited: set of already visited seeds
-     * curback: current number of backtracks
+     * Attempts to link srcSeed to tgtSeed by traversing the graph.
+     * Parameters:
+     * srcSeed: source seed
+     * tgtSeed: target seed
+     * curK: order of the current de Bruijn graph
+     * visited: set of already visited nodes
+     * curBranches: current number of branches explorations
      * dist: current extension distance
      * curExt: current extension sequence
-     * fRes: final result, the function updates it if src and dst could be linked
+     * missingPart: string corresponding to the missing part of the long read. Updated if srcSeed and tgtSeed can be linked.
+     * LRLen: length of the original long read
+     * Returns: 1 if srcSeed can be linked to tgtSeed, 0 otherwhise.
      */ 
-    int link(string src, string dst, int curK, set<int> &visited, int* curback, int dist, string curExt, string &fRes);
+     int link(string srcSeed, string tgtSeed, unsigned curK, set<string> &visited, unsigned* curBranches, unsigned dist, string curExt, string &missingPart, unsigned LRLen);
     
     /**
-	 * Links together the seeds contained in the file tolink, and outputs the corrected long read on the standard output.
-	 * Parameters:
-	 * index: PgSA index
-	 * k: k-mer size
-	 * tolink: files containing the seeds to be linked
-	 * templateId: id of the original template long read
-	 * seedsoverlap: minimum overlap required to allow the merging of two overlapping seeds
-	 * backtracks: maximum number of backtracks allowed
-	 * seedskips: maximum number of seeds that can be skipped
+	 * Generates the corrected long reads for the long reads contained in the vector longReads.
 	 */ 
-    void generateCLR(PgSAIndexStandard* index, int k, string tolink, string templateId, int seedsoverlap, int minoverlap, int backtracks, int seedskips);
+    void generateCLRs(vector<string>& longReads);
+    
+    /**
+     * Launches the correction prodecure.
+     * Parameters:
+	 * index: PgSA index
+	 * maxOrder: maximum order of the variable-order de Bruijn graph
+	 * tmpDir: directory containing the temporary files (long readss to be corrected and associated seeds)
+	 * seedsoverlap: minimum overlap required to allow the merging of two overlapping seeds
+	 * minorder: minimum order of the variable-order de Bruijn graph
+	 * maxbranches: maximum number of branches exploration allowed
+	 * maxseedsskips: maximum number of seeds that can be skipped
+	 * nbThreads: number of threads to use
+	 */ 
+    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned nbThreads);
 }
 
-#endif	/* SLRGEN_H */
-
+#endif	/* SEEDSLNK_H */

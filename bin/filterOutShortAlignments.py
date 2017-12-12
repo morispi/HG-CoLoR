@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import subprocess
@@ -18,7 +18,7 @@ if line != "":
 	alLen = len(t[9])
 	if alLen >= int(sys.argv[2]):
 		finalString = finalString + line
-	line = f.readline()	
+	line = f.readline()
 
 while line != '':
 	t = line.split("\t");

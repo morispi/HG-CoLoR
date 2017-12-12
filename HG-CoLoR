@@ -18,17 +18,17 @@ function print_help {
 	echo "	tmp_directoty:	directory where to store the temporary files."
 	echo ""
 	echo "	Options:"
-	echo "	--kmer:		k-mer size for the graph construction (default: 64)."
-	echo "	--solid:	Minimum number of occurrences to consider a k-mer as solid, after short reads correction (default: 5)."
+	echo "	--maxorder:	Maximum order of the variable-order de Buijn graph (default: 100)."
+	echo "	--solid:	Minimum number of occurrences to consider a k-mer as solid, after short reads correction (default: 2)."
 	echo "			This parameter should be raised accordingly to the short reads coverage and accuracy."
 	echo "			Its default value is adapted for a 50x coverage of short reads with a 1% error rate."
 	echo "	--seedsoverlap:	Minimum overlap length to allow the merging of two overlapping seeds (default: k-1)."
-	echo "	--minoverlap:	Minimum overlap length to allow the exploration of an edge of the graph (default: k-5)."
-	echo "	--backtracks:	Maximum number of backtracks (default: 1,000)."
+	echo "	--minorder:	Minimum order of the variable-order de Bruijn graph (default: maxorder/2)."
+	echo "	--branches:	Maximum number of branches exploration (default: 1,500)."
 	echo "			Raising this parameter will result in less fragmented corrected long reads."
 	echo "			However, it will also increase the runtime, and may create chimeric linkings between the seeds."
 	echo "	--seedskips:	Maximum number of seed skips (default: 5)."
-	echo "	--bestn:	Top alignments to be reported by BLASR (default: 30)."
+	echo "	--bestn:	Top alignments to be reported by BLASR (default: 50)."
 	echo "			This parameter should be raised accordingly to the short reads coverage."
 	echo "			Its default value is adapted for a 50x coverage of short reads."
 	echo "	--kmcmem: 	Maximum amount of RAM for KMC, in GB (default: 12)."
@@ -42,11 +42,11 @@ longreads=""
 LR=""
 shortreads=""
 SR=""
-k=64
-solid=5
-seedsoverlap=""
-minoverlap=""
-backtracks=1000
+K=100
+seedsoverlap=0
+k=0
+solid=2
+branches=1500
 seedskips=5
 bestn=30
 kmcmem="12"
@@ -84,10 +84,10 @@ while [[ "$1" != "" ]] ; do
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
 				*) tmpdir="$2" ; shift 2 ;;
 			esac ;;
-		"--kmer")
+		"--maxorder")
 			case "$2" in
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
-				*) k="$2" ; shift 2 ;;
+				*) K="$2" ; shift 2 ;;
 			esac ;;
 		"--solid")
 			case "$2" in
@@ -99,15 +99,15 @@ while [[ "$1" != "" ]] ; do
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
 				*) seedsoverlap="$2" ; shift 2 ;;
 			esac ;;
-		"--minoverlap")
+		"--minorder")
 			case "$2" in
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
-				*) minoverlap="$2" ; shift 2 ;;
+				*) k="$2" ; shift 2 ;;
 			esac ;;
-		"--backtracks")
+		"--branches")
 			case "$2" in
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
-				*) backtracks="$2" ; shift 2 ;;
+				*) branches="$2" ; shift 2 ;;
 			esac ;;
 		"--seedskips")
 			case "$2" in
@@ -136,12 +136,12 @@ while [[ "$1" != "" ]] ; do
   	esac
 done
 
-#If seedsoverlap or minoverlap haven't been set, set them to default values
-if [[ $seedsoverlap = "" ]] ; then
-	seedsoverlap=$((k-1))
+#If seedsoverlap or minorder haven't been set, set them to default values
+if [[ $seedsoverlap -eq 0 ]] ; then
+	seedsoverlap=$((K-1))
 fi
-if [[ $minoverlap = "" ]] ; then
-	minoverlap=$((k-5))
+if  [[ $k -eq 0 ]] ; then
+	k=$((K/2))
 fi
 
 #Exit if no short reads, no long reads, no temporary directory, or no output files have been specified
@@ -177,10 +177,10 @@ if [[ ! -d $tmpdir/Alignments ]] ; then
 	mkdir $tmpdir/Alignments
 fi
 
-#Create temporary files
-aln=$SR"_on_$LR"
+#Temporary files names
+aln="SR_on_LR.sam"
 seeds="seeds"
-formatLR="format_$LR"
+formatLR="formatted_LR.fa"
 
 #Get the path to HG-CoLoR's folder
 hgs=$(readlink -f "$0")
@@ -190,45 +190,53 @@ hgf=$(dirname $hgs)
 echo "["$(date)"] Correcting the short reads"
 echo "----- QuorUM -----" >> HG-CoLoR.stdout
 echo "----- QuorUM -----" >> HG-CoLoR.stderr
-quorum --prefix $tmpdir/quorum_corrected -q 33 -t "$nproc" "$shortreads" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+quorum --prefix $tmpdir/corrected_SR -q 33 -t "$nproc" "$shortreads" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 
-echo "["$(date)"] Removing short reads containing weak k-mers"
-$hgf/bin/filterShortReads.py $tmpdir/quorum_corrected.fa "$k" > $tmpdir/long_quorum_corrected.fa
+echo "["$(date)"] Removing short reads containing weak K-mers"
+$hgf/bin/filterShortReads.py $tmpdir/corrected_SR.fa "$K" > $tmpdir/long_corrected_SR.fa
 echo "----- revseq -----" >> HG-CoLoR.stdout
 echo "----- revseq -----" >> HG-CoLoR.stderr
-revseq $tmpdir/long_quorum_corrected.fa -reverse -complement -outseq $tmpdir/RC_long_quorum_corrected.fa >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
-sed -i ':a; $!N; /^>/!s/\n\([^>]\)/\1/; ta; P; D' $tmpdir/RC_long_quorum_corrected.fa
-cat $tmpdir/long_quorum_corrected.fa $tmpdir/RC_long_quorum_corrected.fa > $tmpdir/all_long_quorum_corrected.fa
+revseq $tmpdir/long_corrected_SR.fa -reverse -complement -outseq $tmpdir/RC_long_corrected_SR.fa >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+sed -i ':a; $!N; /^>/!s/\n\([^>]\)/\1/; ta; P; D' $tmpdir/RC_long_corrected_SR.fa
+cat $tmpdir/long_corrected_SR.fa $tmpdir/RC_long_corrected_SR.fa > $tmpdir/all_long_corrected_SR.fa
 echo "----- KMC -----" >> HG-CoLoR.stdout
 echo "----- KMC -----" >> HG-CoLoR.stderr
-kmc -m"$kmcmem" -k"$k" -b -fa $tmpdir/all_long_quorum_corrected.fa $tmpdir/mers.db $tmpdir >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+kmc -m"$kmcmem" -k"$K" -ci"$solid" -b -fa $tmpdir/all_long_corrected_SR.fa $tmpdir/mers.db $tmpdir >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 echo "----- KMC_tools -----" >> HG-CoLoR.stdout
 echo "----- KMC_tools -----" >> HG-CoLoR.stderr
-kmc_tools filter $tmpdir/mers.db -ci"$solid" $tmpdir/long_quorum_corrected.fa -ci1.0 -fa $tmpdir/good_long_quorum_corrected.fa -fa >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
-mv $tmpdir/good_long_quorum_corrected.fa $tmpdir/long_quorum_corrected.fa
+kmc_tools filter $tmpdir/mers.db -ci"$solid" $tmpdir/long_corrected_SR.fa -ci1.0 -fa $tmpdir/good_long_corrected_SR.fa -fa >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+rm $tmpdir/long_corrected_SR.fa $tmpdir/RC_long_corrected_SR.fa $tmpdir/all_long_corrected_SR.fa $tmpdir/corrected_SR.fa
 
 echo "["$(date)"] Building the graph"
 echo "----- KMC_dump -----" >> HG-CoLoR.stdout
 echo "----- KMC_dump -----" >> HG-CoLoR.stderr
-kmc_dump -ci"$solid" $tmpdir/mers.db $tmpdir/"dumped_$k-mers-$SR" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
-cut -f 1 $tmpdir/"dumped_$k-mers-$SR" > $tmpdir/"$k-mers-$SR"
+kmc_dump -ci"$solid" $tmpdir/mers.db $tmpdir/"dumped_$K-mers" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+cut -f 1 $tmpdir/"dumped_$K-mers" > $tmpdir/"$K-mers.fa"
 echo "----- PgSAgen -----" >> HG-CoLoR.stdout
 echo "----- PgSAgen -----" >> HG-CoLoR.stderr
-$hgf/bin/PgSAgen $tmpdir/"$k-mers-$SR" $tmpdir/"$k-mers-$SR" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+$hgf/bin/PgSAgen $tmpdir/"$K-mers.fa" $tmpdir/"$K-mers.fa" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 
 echo "["$(date)"] Aligning the short reads on the long reads"
 $hgf/bin/formatLongReads.py "$longreads" > $tmpdir/"$formatLR"
+#Split the long reads file into multiple fragments, to overcome BLASR's 4Gb limation
+gt splitfasta -force -targetsize 2000 $tmpdir/"$formatLR"
 echo "----- blasr -----" >> HG-CoLoR.stderr
-$hgf/bin/blasr $tmpdir/long_quorum_corrected.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$k" --bestn "$bestn" > $tmpdir/"$aln" 2>> HG-CoLoR.stderr
-
+#Run blasr on each fragment
+for frag in $tmpdir/$formatLR.*
+do
+	$hgf/bin/blasr $tmpdir/good_long_corrected_SR.fa $frag --nproc "$nproc" -m 6 --minAlnLength "$K" --bestn "$bestn" > $tmpdir/"sam_"$(basename $frag) 2>> HG-CoLoR.stderr
+done
+cat $tmpdir/sam_* > $tmpdir/"$aln"
+rm $tmpdir/sam_*
 echo "["$(date)"] Removing short alignments"
 sort -T $tmpdir/ -k 3 $tmpdir/"$aln" > $tmpdir/"tmp_$aln"
 mv $tmpdir/"tmp_$aln" $tmpdir/"$aln"
-$hgf/bin/filterOutShortAlignments.py $tmpdir/"$aln" "$k" $tmpdir/Alignments/
+$hgf/bin/filterOutShortAlignments.py $tmpdir/"$aln" "$K" $tmpdir/Alignments/
+rm $tmpdir/"$aln"
 ls $tmpdir/Alignments/ > $tmpdir/"$seeds"
 
 echo "["$(date)"] Generating the corrected long reads"
-parallel -j "$nproc" $hgf/bin/generateCLR $tmpdir "$k" $tmpdir/"$k-mers-$SR.pgsa" "$seedsoverlap" "$minoverlap" "$backtracks" "$seedskips" "$out" :::: $tmpdir/"$seeds"
+$hgf/bin/CLRgen -t "$tmpdir" -K "$K" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -j "$nproc" $tmpdir/"$K-mers.fa.pgsa" > "$out"
 
 echo "["$(date)"] Removing temporary files"
 rm -Rf $tmpdir

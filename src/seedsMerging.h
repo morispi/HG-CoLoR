@@ -8,29 +8,29 @@
 using namespace std;
  
 /**
- * Data structure used to sore informations about the alignment of a seed
- * on a template.
+ * Data structure used to sore informations about the alignment of a seed on a long read.
  * alen: alignment length
  * pos: alignment position
- * tlen: template length
- * matches: number of matching bases
+ * tlen: long read length
+ * score: score of the alignment
  * seq: DNA sequence of the alignment
  */ 
 struct seed_t {
 	int pos;
 	int alen;
 	int tlen;
-	int matches;
+	int score;
 	string seq;
+	int nb;
 	
 	bool operator<(const seed_t& s2) const {
 	  if (pos < s2.pos) {
 		  return true;
 	  } else if (pos == s2.pos && alen < s2.alen) {
 		  return true;
-	  } else if (pos == s2.pos && alen == s2.alen && matches < s2.matches) {
+	  } else if (pos == s2.pos && alen == s2.alen && score < s2.score) {
 		  return true;
-	  } else if (pos == s2.pos && alen == s2.alen && matches == s2.matches && seq < s2.seq) {
+	  } else if (pos == s2.pos && alen == s2.alen && score == s2.score && seq < s2.seq) {
 		  return true;
 	  } else {
 		  return false;
@@ -39,8 +39,8 @@ struct seed_t {
 };
 
 /**
- * Computes the backtrack table of the string s. Auxiliary function used
- * to compute the overlap length between two strings.
+ * Computes the backtrack table of the string s.
+ * Auxiliary function used to compute the overlap length between two strings.
  */
 int* computeBacktrackTable(string s);
 
@@ -63,10 +63,10 @@ void mergeOverlappingPosSeeds(vector<seed_t> &seeds, unsigned minOverlap);
 void mergeOverlappingSeqSeeds(vector<seed_t> &seeds, int minOverlap);
 
 /**
- * Returns the length of the sequence of the template of identifier tpl.
+ * Returns the length of the sequence of the long read of identifier LR.
  * len: length of the identifier.
  */ 
-int getTemplateLength(string tpl);
+int getLongReadLength(string LR);
 
 /**
  * Reads the alignments stored in the file alFile, and 
@@ -80,5 +80,3 @@ vector<seed_t> readAlignmentFile(string alFile);
  * of length minOverlap.
  */ 
 vector<seed_t> processSeeds(string alFile, unsigned minOverlap);
-
-

@@ -1,64 +1,55 @@
 #include "index/cache/persistence/CountQueriesCachePersistence.h"
 #include "suffixarray/persistence/SuffixArrayPersistence.h"
 #include "seedsLinking.h"
-
 #include "helper.h"
-#include <stdlib.h>    /* for exit */
+#include <stdlib.h>
 #include <unistd.h>
 
 PgSAIndexStandard* prepareIndex(string idxFile, string cacheFile) {
-
     return PgSAIndexFactory::getPgSAIndexStandard(idxFile, cacheFile, false);
+}
 
-};
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 
     int opt; // current option
-    int k = 64;
+    int maxorder = 100;
     string cacheFile;
-    string kParam;
-    size_t pos;
-    size_t found;
-    string tolink;
-    string tpl;
-    int seedsoverlap;
-    int minoverlap;
-    int backtracks;
-    int seedskips;
+    string tmpDir;
+    int seedsoverlap = maxorder - 1;
+    int minorder = maxorder / 2;
+    int maxbranches = 1500;
+    int seedskips = 5;
+    int nbThreads = 1;
 
-    while ((opt = getopt(argc, argv, "c:k:l:t:o:m:b:s:?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:K:t:o:k:b:s:j:?")) != -1) {
         switch (opt) {
 			case 'c':
 				cacheFile = optarg;
 				break;
-			case 'k':
-				k = atoi(optarg);
-				break;
-			case 'l':
-				tolink = optarg;
+			case 'K':
+				maxorder = atoi(optarg);
 				break;
 			case 't':
-				tpl = optarg;
+				tmpDir = optarg;
 				break;
 			case 'o':
 				seedsoverlap = atoi(optarg);
 				break;
-			case 'm':
-				minoverlap = atoi(optarg);
+			case 'k':
+				minorder = atoi(optarg);
 				break;
 			case 'b':
-				backtracks = atoi(optarg);
+				maxbranches = atoi(optarg);
 				break;
 			case 's':
 				seedskips = atoi(optarg);
 				break;
+			case 'j':
+				nbThreads = atoi(optarg);
+				break;
 			case '?':
 			default: /* '?' */
-				fprintf(stderr, "Usage: %s [-k length] [-r no of repeats] [-n no of testkmers] [-c cachefile] [-p] [-s] [-f] indexfile\n\n",
-						argv[0]);
-				fprintf(stderr, "-p query by position\n-s scramble reads (for uncorrecly concatenated pair-ended data)\n-f -filter TTTTTT.....TTTT reads (for compatibility with CGk tests)\n\n");
+				fprintf(stderr, "Usage: %s [-K maxOrder] [-t tmpDir] [-o seedsOverlap] [-k minOrder] [-b maxBranches] [-s seedsSkips] [-j threadsNb] [-c cachefile] indexfile\n\n", argv[0]);
 				exit(EXIT_FAILURE);
         }
     }
@@ -69,12 +60,11 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-
     string idxFile(argv[optind++]);
 
     PgSAIndexStandard* idx = prepareIndex(idxFile, cacheFile);
     
-    CLRgen::generateCLR(idx, k, tolink, tpl, seedsoverlap, minoverlap, backtracks, seedskips);
+    CLRgen::startCorrection(idx, maxorder, tmpDir, seedsoverlap, minorder, maxbranches, seedskips, nbThreads);
     
     delete(idx);
 

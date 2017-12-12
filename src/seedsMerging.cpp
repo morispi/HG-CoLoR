@@ -7,7 +7,7 @@ int* computeBacktrackTable(string s) {
 	int cnd = 0;
 	T[0] = -1;
 	T[1] = 0;
-	int pos = 2;
+	unsigned pos = 2;
 	while (pos < s.length()) {
 		if (s[pos - 1] == s[cnd]) {
 			T[pos] = cnd + 1;
@@ -29,8 +29,8 @@ int overlapLength(string s1, string s2) {
 
 	int* T = computeBacktrackTable(s2);
 
-	int m = 0;
-	int i = 0;
+	unsigned m = 0;
+	unsigned i = 0;
 	while (m + i < s1.length()) {
 		if (s2[i] == s1[m + i]) {
 			i += 1;
@@ -64,10 +64,11 @@ void mergeOverlappingPosSeeds(vector<seed_t> &seeds, unsigned minOverlap) {
         cplen = seeds[j].pos + seeds[j].alen - seeds[i].pos - seeds[i].alen;
         seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(seeds[j].alen - cplen);
         seeds[i].alen = seeds[i].alen + cplen;
-        seeds[i].matches = seeds[i].matches + (seeds[j].matches / seeds[j].alen) * (cplen);
+        seeds[i].score = seeds[i].score + (seeds[j].score / seeds[j].alen) * (cplen);
+        seeds[i].nb++;
         seeds.erase(seeds.begin() + j);
       // Othewhise, keep the seed with the best alignment score
-     } else if (seeds[i].matches < seeds[j].matches) {
+     } else if (seeds[i].score < seeds[j].score) {
         seeds.erase(seeds.begin() + j);
       } else {
         seeds.erase(seeds.begin() + i);
@@ -94,7 +95,8 @@ void mergeOverlappingSeqSeeds(vector<seed_t> &seeds, int minOverlap) {
 		cplen = seeds[j].alen - overlap;
         seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(overlap);
 		seeds[i].alen = seeds[i].alen + cplen;
-		seeds[i].matches = seeds[i].matches + seeds[j].matches / 2;
+		seeds[i].score = seeds[i].score + seeds[j].score / 2;
+		seeds[i].nb++;
 		seeds.erase(seeds.begin() + j);
 	} else {
 		i = j;
@@ -103,7 +105,7 @@ void mergeOverlappingSeqSeeds(vector<seed_t> &seeds, int minOverlap) {
   }
 }
 
-int getTemplateLength(string tpl) {
+int getLongReadLength(string tpl) {
 	int i = tpl.length() - 1;
 	while (i >= 0 && tpl[i] != '_') {
 		i--;
@@ -116,7 +118,7 @@ vector<seed_t> readAlignmentFile(string alFile) {
 	int posT;
 	int rlen;
 	int tlen = -1;
-	int matches;
+	int score;
 	string seq;
 	string line;
 	vector<seed_t> seeds;
@@ -129,7 +131,7 @@ vector<seed_t> readAlignmentFile(string alFile) {
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
 		if (tlen == -1) {
-			tlen = getTemplateLength(token);
+			tlen = getLongReadLength(token);
 		}
 		getline(iss, token, '\t');
 		posT = stoi(token, NULL);
@@ -144,7 +146,7 @@ vector<seed_t> readAlignmentFile(string alFile) {
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
-		matches = stoi(token.substr(5), NULL);
+		score = stoi(token.substr(5), NULL);
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
@@ -154,7 +156,7 @@ vector<seed_t> readAlignmentFile(string alFile) {
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
-		seeds.push_back({posT, rlen, tlen, matches, seq});
+		seeds.push_back({posT, rlen, tlen, score, seq, 1});
 	}
 	f.close();
 	
