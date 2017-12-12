@@ -24,13 +24,14 @@ bin/blasr-license.
   
 Installation
 --------------
-
-  `git clone https://github.com/pierre-morisse/HG-CoLoR`
-  `git submodule init`
-  `git submodule update`
-  `cd KMC/ && make -j`
-  `cd ../PgSA/ && make build CONF=pgsalib`
-  `cd .. && make` 
+  ```bash
+  git clone https://github.com/pierre-morisse/HG-CoLoR
+  git submodule init
+  git submodule update
+  cd KMC/ && make -j
+  cd ../PgSA/ && make build CONF=pgsalib
+  cd .. && make
+  ```
   
 Running HG-CoLoR
 --------------
