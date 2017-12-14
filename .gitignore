@@ -1,3 +1,7 @@
 bin/CLRgen
 bin/PgSAgen
 src/*.o
+*.fa
+*.fasta
+*.fq
+*.fastq
