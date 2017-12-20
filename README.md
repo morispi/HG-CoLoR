@@ -55,7 +55,7 @@ To run HG-CoLoR, run the following command:
                         This parameter should be raised accordingly to the short reads coverage and accuracy.
                         Its default value is adapted for a 50x coverage set of short reads with a 1% error rate.
       --seedsoverlap:   Minimum overlap length to allow the merging of two overlapping seeds (default: k-1).
-      --minoverlap:     Minimum order of the variable-order de Bruijn graph (default: maxorder/2).
+      --minorder:     Minimum order of the variable-order de Bruijn graph (default: maxorder/2).
       --branches:       Maximum number of branches exploration (default: 1,500).
                         Raising this parameter will result in less fragmented corrected long reads.
                         However, it will also increase the runtime, and may create chimeric linkings between the seeds.
