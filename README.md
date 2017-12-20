@@ -11,7 +11,6 @@ Requirments
 
   - A Linux based operating system.
   - Python3.
-  - Genometools binaries accessible through your PATH environment variable (http://genometools.org/).
   - Emboss binaries accessible through your PATH environment variable (http://emboss.sourceforge.net/download/).
   - KMC3 binaries accessible through your PATH environment variable (https://github.com/refresh-bio/KMC).
   - QuorUM binary accessible through your PATH environment variable (https://github.com/gmarcais/Quorum).
