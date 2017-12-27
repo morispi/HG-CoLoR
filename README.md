@@ -53,14 +53,14 @@ To run HG-CoLoR, run the following command:
       --maxorder:       Maximum order of the variable-order de Bruijn graph (default: 100).
       --solid:          Minimum number of occurrences to consider a k-mer as solid (default: 1).
                         This parameter should be raised accordingly to the short reads coverage and accuracy,
-			and to the chosen maximum order of the graph.
+	                and to the chosen maximum order of the graph.
       --seedsoverlap:   Minimum overlap length to allow the merging of two overlapping seeds (default: maxorder - 1).
-      --minorder:	Minimum order of the variable-order de Bruijn graph (default: maxorder / 2).
+      --minorder:       Minimum order of the variable-order de Bruijn graph (default: maxorder / 2).
       --branches:       Maximum number of branches exploration (default: 1,500).
                         Raising this parameter will result in less split corrected long reads.
                         However, it will also increase the runtime, and may create chimeric links between the seeds.
       --seedskips:      Maximum number of seed skips (default: 5).
-      --mismatches:	Allowed mismatches when attempting to link two seeds together (default: 3).
+      --mismatches:     Allowed mismatches when attempting to link two seeds together (default: 3).
       --bestn:          Top alignments to be reported by BLASR (default: 50).
                         This parameter should be raised accordingly to the short reads coverage.
                         Its default value is adapted for a 50x coverage of short reads.
