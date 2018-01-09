@@ -35,7 +35,8 @@ Installation
 Running HG-CoLoR
 --------------
 
-To run HG-CoLoR, run the following command:       
+To run HG-CoLoR, run the following command:
+
 `./HG-CoLoR --longreads LR.fasta --shortreads SR.fastq --out result.fasta --tmpdir tmp_directory`
 
 ### Input
