@@ -67,7 +67,7 @@ where
       --maxorder:       Maximum order of the variable-order de Bruijn graph (default: 100).
       --solid:          Minimum number of occurrences to consider a k-mer as solid (default: 1).
                         This parameter should be raised accordingly to the short reads coverage and accuracy,
-	                and to the chosen maximum order of the graph.
+                        and to the chosen maximum order of the graph.
       --seedsoverlap:   Minimum overlap length to allow the merging of two overlapping seeds (default: maxorder - 1).
       --minorder:       Minimum order of the variable-order de Bruijn graph (default: maxorder / 2).
       --branches:       Maximum number of branches exploration (default: 1,500).
