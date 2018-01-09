@@ -53,7 +53,7 @@ To run HG-CoLoR, run the following command:
 The corrected reads are output in fasta format, with one sequence per line. The header of each corrected read
 currently consists of two or three components, defined as follow:
 
->id_len[_frag]
+`>id_len[_frag]`
 
 where
 
