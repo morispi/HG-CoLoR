@@ -37,7 +37,7 @@ Running HG-CoLoR
 
 To run HG-CoLoR, run the following command:
 
-`./HG-CoLoR --longreads LR.fasta --shortreads SR.fastq --out result.fasta --tmpdir tmp_directory`
+`./HG-CoLoR --longreads LR.fasta --shortreads SR.fastq --out resultPrefix -K maxK`
 
 ### Input
 
@@ -46,41 +46,45 @@ To run HG-CoLoR, run the following command:
     Warning: only one file must be provided.
     If using paired reads, please concatenate them into one single file.
 
-  - result.fasta:   fasta file where to output the corrected long reads.
-  - tmp_directory directory where to store the temporary files.
+  - resultPrefix:   Prefix of the fasta files where to output the corrected, trim and split long reads.
+  - maxK:           Maximum K-mer size of the variable-order de Bruijn graph.
 
 ### Output format
 
 The corrected reads are output in fasta format, with one sequence per line. The header of each corrected read
-currently consists of two or three components, as follow:
+consists of 5 components, as follows:
 
-`>id_len[_frag]`
+`>id_len_seedsBases_graphBases_rawBases`
 
 where
 
   - `id` is the original read header
   - `len` is the original read length
-  - `frag` is the number of the current fragment of the long read, and is present if this long read was split
+  - `seedsBases` is the number of bases of the corrected long read coming from seeds
+  - `graphBases` is the number of bases of the corrected long read coming from the traversals of the variable-order de Bruijn graph
+  - `rawBases` is the number of (uncorrected) bases of the corrected long read, coming from the original, raw long read
 
 ### Options
 
-      --maxorder:       Maximum order of the variable-order de Bruijn graph (default: 100).
-      --solid:          Minimum number of occurrences to consider a k-mer as solid (default: 1).
-                        This parameter should be raised accordingly to the short reads coverage and accuracy,
-                        and to the chosen maximum order of the graph.
-      --seedsoverlap:   Minimum overlap length to allow the merging of two overlapping seeds (default: maxorder - 1).
-      --minorder:       Minimum order of the variable-order de Bruijn graph (default: maxorder / 2).
-      --branches:       Maximum number of branches exploration (default: 1,500).
-                        Raising this parameter will result in less split corrected long reads.
-                        However, it will also increase the runtime, and may create chimeric links between the seeds.
-      --seedskips:      Maximum number of seed skips (default: 5).
-      --mismatches:     Allowed mismatches when attempting to link two seeds together (default: 3).
-      --bestn:          Top alignments to be reported by BLASR (default: 50).
-                        This parameter should be raised accordingly to the short reads coverage.
-                        Its default value is adapted for a 50x coverage of short reads.
-      --kmcmem:         Maximum amount of RAM for KMC, in GB (default: 12)
-      --nproc:          Number of processes to run in parallel (default: number of cores).
-      --help:           Print a help message.
+      --minorder INT, -k INT:       Minimum order of the variable-order de Bruijn graph (default: K/2).
+      --solid INT, -S INT:          Minimum number of occurrences to consider a k-mer as solid (default: 1).
+                                    This parameter should be set accordingly to the short reads coverage and accuracy,
+                                    and to the chosen maximum order of the graph.
+                                    It should only be increased when using high coverage of short reads, or a small maximum order.
+      --seedsoverlap INT, -o INT:   Minimum overlap length to allow the merging of two overlapping seeds (default: maxorder - 1).
+      --branches INT, -b INT:       Maximum number of branches exploration (default: 1,500).
+                                    Raising this parameter will result in less split corrected long reads.
+                                    However, it will also increase the runtime, and may create chimeric links between the seeds.
+      --seedskips INT, -s INT:      Maximum number of seed skips (default: 5).
+      --mismatches INT, -m INT:     Allowed mismatches when attempting to link two seeds together (default: 3).
+      --bestn INT, -n INT:          Top alignments to be reported by BLASR (default: 50).
+                                    This parameter should be set accordingly to the short reads coverage.
+                                    Its default value is adapted for a 50x coverage of short reads.
+                                    It should be decreased with higher coverage, and increased with lower coverage.
+      --nproc INT, -j INT:          Number of processes to run in parallel (default: number of cores).
+      --tmpdir STRING, -t STRING:   Path where to store the directory containing temporary files (default: working directory)
+      --kmcmem INT, -r INT:         Maximum amount of RAM for KMC, in GB (default: 12)
+      --help, -h:                   Print this help message.
 
 ### Short reads coverage and accuracy
 
