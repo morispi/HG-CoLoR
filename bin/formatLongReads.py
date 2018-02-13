@@ -10,7 +10,7 @@ while line != '':
     line = f.readline()
     length = len(line) - 1
 
-    s = id+"_"+str(length)
+    s = id.replace(" ", "_") + "_" + str(length)
     print(s)
     print(line[:-1])
 
