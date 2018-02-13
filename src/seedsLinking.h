@@ -18,13 +18,15 @@ namespace CLRgen {
     
     /**
      * Extends the CLR LR on the left, on a maximum distance of extLen.
+     * Returns: The actual size of the extension.
      */ 
-    void extendLeft(unsigned extLen, string &LR);
+    unsigned extendLeft(unsigned extLen, string &LR);
     
     /**
      * Extends the CLR LR on the right, on a maximum distance of extLen.
+     * Returns: The actual size of the extension.
      */
-    void extendRight(unsigned extLen, string &LR);
+    unsigned extendRight(unsigned extLen, string &LR);
     
     /**
      * Attempts to link srcSeed to tgtSeed by traversing the graph.
@@ -57,9 +59,10 @@ namespace CLRgen {
 	 * minorder: minimum order of the variable-order de Bruijn graph
 	 * maxbranches: maximum number of branches exploration allowed
 	 * maxseedsskips: maximum number of seeds that can be skipped
+	 * mismatches: mismatch threshold tolerance
 	 * nbThreads: number of threads to use
 	 */ 
-    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned nbThreads);
+    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads);
 }
 
 #endif	/* SEEDSLNK_H */

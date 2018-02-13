@@ -15,14 +15,51 @@ namespace CLRgen {
     mutex outMtx, PgSAMtx;
     string tmpDir;
     unsigned maxSeedsSkips;
+    unsigned misMatches;
 
     typedef DefaultPgSAIndex<uint_reads_cnt_std, unsigned int
         , uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std,
             DefaultSuffixArrayOfConstantLengthTypeTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std, 4>::Type> PgSAIndexStandardImpl;
+            
+    string revComp(string seq, int len) {
+        string res = string(seq);
+        for (int i = 0; i < len; i++) {
+                switch(seq[i]) {
+                        case 'A':
+                                res[len-i-1] = 'T';
+                                break;
+                        case 'C':
+                                res[len-i-1] = 'G';
+                                break;
+                        case 'G':
+                                res[len-i-1] = 'C';
+                                break;
+                        case 'T':
+                                res[len-i-1] = 'A';
+                                break;
+                        default:
+                                res[len-i-1] = 'N';
+                                break;
+                }
+        }
+        return res;
+	}
+	
+	string getRawRead(string readId) {
+		string line;
+		ifstream f(readId);
+		getline (f, line);
+		//~ cerr << "line : " << line << endl;
+		getline (f, line);
+		//~ cerr << "line : " << line << endl;
+		f.close();
+		
+		return line;
+	}
     
     // Returns the number of difference between s1 and s2
-    int getDifferences(string s1, string s2) {
-		int diff = 0;
+    unsigned getDifferences(string s1, string s2) {
+		unsigned diff = 0;
 		for (unsigned i = 0; i < s1.size(); i++) {
 			if (s1[i] != s2[i]) {
 				diff++;
@@ -70,7 +107,7 @@ namespace CLRgen {
 		return fres;
 	}
     
-    void extendLeft(unsigned extLen, string &LR) {
+    unsigned extendLeft(unsigned extLen, string &LR) {
 		vector<string> neighbours;
 		vector<string>::iterator it;
 		unsigned curK = maxOrder;
@@ -97,9 +134,11 @@ namespace CLRgen {
 			}
 			it = neighbours.begin();	
 		}
+		
+		return dist;
 	}
 
-	void extendRight(unsigned extLen, string &LR) {
+	unsigned extendRight(unsigned extLen, string &LR) {
 		vector<string> neighbours;
 		vector<string>::iterator it;
 		unsigned curK = maxOrder;
@@ -126,10 +165,13 @@ namespace CLRgen {
 			}
 			it = neighbours.begin();
 		}
+		
+		return dist;
 	}
 	
 	int link(string srcSeed, string tgtSeed, unsigned curK, set<string> &visited, unsigned* curBranches, unsigned dist, string curExt, string &missingPart, unsigned LRLen) {
 		if (curK <= minOrder || *curBranches > maxBranches || dist > LRLen) {
+				missingPart = string();
 				return 0;
 		}
 		
@@ -137,7 +179,7 @@ namespace CLRgen {
 		string tgtAnchor = tgtSeed.substr(0, curK);
 		vector<string> neighbours;
 		vector<string>::iterator it;
-		int found = getDifferences(srcAnchor, tgtAnchor) <= 3;
+		int found = getDifferences(srcAnchor, tgtAnchor) <= misMatches;
 		string curRead;
 		string resPart1 = string(curExt);
 		set<string>::iterator itf;
@@ -156,7 +198,7 @@ namespace CLRgen {
 			curRead = *it;
 			itf = visited.find(curRead);
 			tgtAnchor = tgtSeed.substr(0, curRead.length());
-			found = getDifferences(curRead, tgtAnchor) <= 3;
+			found = getDifferences(curRead, tgtAnchor) <= misMatches;
 			if (!found && (itf == visited.end())) {
 				visited.insert(curRead);
 				resPart1 = resPart1 + curRead.substr(curK - 1);
@@ -172,6 +214,8 @@ namespace CLRgen {
 						neighbours = getNeighbours(srcAnchor.substr(srcAnchor.length() - curK), 0);
 				}
 				it = neighbours.begin();
+			} else if (found) {
+				resPart1 = resPart1 + curRead.substr(curK - 1);
 			} else {
 				it++;
 			}
@@ -194,7 +238,7 @@ namespace CLRgen {
 			curRead = *it;
 			itf = visited.find(curRead);
 			tgtAnchor = tgtSeed.substr(0, curRead.length());
-			found = getDifferences(curRead, tgtAnchor) <= 3;
+			found = getDifferences(curRead, tgtAnchor) <= misMatches;
 			if (!found && (itf == visited.end())) {
 				visited.insert(curRead);
 				(*curBranches)++;
@@ -205,8 +249,7 @@ namespace CLRgen {
 					return 1;
 				}
 			} else if (found) {
-				missingPart = resPart1 + tgtSeed.substr(curK - 1);
-				return 1;
+				resPart1 = resPart1 + curRead.substr(curK - 1);
 			} else {
 				++it;
 			}
@@ -221,16 +264,17 @@ namespace CLRgen {
 				return 0;
 			}
 		} else {
-			missingPart = resPart1 + tgtSeed.substr(curK - 1);
+			missingPart = resPart1 + tgtSeed.substr(curK);
 			return 1;
 		}
 	}
 
     void generateCLRs(vector<string>& longReads) {
-		unsigned fragments, skippedSeeds, posBeg, posSrc, posTgt, dist,
-				 curBranches, LRLen, idSeed, seedsSkips, curLink = 0;
-		int firstSkippedSeed, linked;
-		string LRId, src, tgt, correctedLR;
+		unsigned skippedSeeds, posBeg, posSrc, posTgt, dist,
+				 curBranches, LRLen, idSeed, seedsSkips, idTmp, tmpSkips,
+				 isLinkable, curLink = 0;
+		int firstSkippedSeed, linked, nbSeedsBases, nbGraphBases, nbRawBases, nextReachable, posEnd;
+		string LRId, src, tgt, rawSeq, rawPart, correctedLR, tmpSeed, missingPart, tmpMissingPart;
 		set<string> visited;
 		vector<seed_t> seeds;
 		seed_t curSeed;
@@ -238,14 +282,12 @@ namespace CLRgen {
 		// Iterate through the long reads
 		while (curLink < longReads.size()) {
 			LRId = longReads[curLink];
-			fragments = 1;
 			skippedSeeds = 0;
 			firstSkippedSeed = -1;
 			idSeed = 0;
 			posBeg = 0;
 			posSrc = 0;
 			posTgt = 0;
-			dist = 0;
 			curBranches = 0;
 			linked = 0;
 			LRLen = 0;
@@ -254,12 +296,16 @@ namespace CLRgen {
 			correctedLR = "";
 			ostringstream fRes;
 			seedsSkips = maxSeedsSkips;
+			nbSeedsBases = 0;
+			nbGraphBases = 0;
+			nbRawBases = 0;
 			
 			// Merge the overlapping seeds of the current long read
 			seeds = processSeeds(tmpDir + "/Alignments/" + LRId, seedsOverlap);
+			// Get the raw sequence of the current long read
+			rawSeq = getRawRead(tmpDir + "/RawLongReads/" + LRId);
 			
 			if (seeds.size() > 0) {
-				
 				if (seedsSkips > (seeds.size() - 1) - idSeed - 1) {
 					seedsSkips = (seeds.size() - 1) - idSeed - 1;
 				}
@@ -270,42 +316,61 @@ namespace CLRgen {
 				posBeg = posSrc;
 				LRLen = curSeed.tlen;
 				src = curSeed.seq;
-				string missingPart;
 				idSeed++;
-				int nextReachable;
+				nextReachable = -1;
 			
 				// Iterate through the seeds and link them
 				while (idSeed < seeds.size()) {
 					nextReachable = -1;
 					curSeed = seeds[idSeed];
 					posTgt = curSeed.pos;
-					dist = posTgt - posSrc - src.length();
-					tgt = curSeed.seq;					
+					tgt = curSeed.seq;		
+					curBranches = 0;			
 					missingPart = string();
-					curBranches = 0;
+					
+					// Search for a path between the source and the target
 					linked = link(src, tgt, maxOrder, visited, &curBranches, 0, src, missingPart, LRLen);
+					if (!linked) {
+						visited.clear();
+						curBranches = 0;
+						missingPart = string();
+						linked = link(revComp(tgt, tgt.size()), revComp(src, src.size()), maxOrder, visited, &curBranches, 0, revComp(tgt, tgt.size()), missingPart, LRLen);
+						missingPart = revComp(missingPart, missingPart.size());
+					}
 					visited.clear();
-					unsigned idTmp = idSeed + 1;
-					unsigned tmpSkips = 0;
-					unsigned isLinkable = idTmp == seeds.size();
-					string tmpSeed;
-					string tmpMissingPart = string();
-					// If the target seed could be reached, check if it can be linked
-					while (linked && !isLinkable && idTmp < seeds.size() && tmpSkips <= maxSeedsSkips) {
+					idTmp = idSeed + 1;
+					tmpSkips = 0;
+					isLinkable = idTmp == seeds.size();
+					tmpMissingPart = string();
+					
+					// If a path between the source and the target exists, check if the target can be linked to another seed
+					while (linked && !isLinkable && idTmp < seeds.size() && tmpSkips <= seedsSkips) {
 						tmpSeed = seeds[idTmp].seq;
 						curBranches = 0;
+						tmpMissingPart = string();
 						isLinkable = link(tgt, tmpSeed, maxOrder, visited, &curBranches, 0, tgt, tmpMissingPart, LRLen);
+						if (!isLinkable) {
+							visited.clear();
+							curBranches = 0;
+							tmpMissingPart = string();
+							isLinkable = link(revComp(tmpSeed, tmpSeed.size()), revComp(tgt, tgt.size()), maxOrder, visited, &curBranches, 0, revComp(tmpSeed, tmpSeed.size()), tmpMissingPart, LRLen);
+							tmpMissingPart = revComp(tmpMissingPart, tmpMissingPart.size());
+						}
 						visited.clear();
 						idTmp++;
 						tmpSkips++;
 					}
+					
 					// Seeds were linked, update the missing part of the long read
 					if (linked != 0 && isLinkable) {
 						if (correctedLR.empty()) {
 							correctedLR = missingPart;
+							nbSeedsBases = nbSeedsBases + src.size() + tgt.size();
 						} else {
 							correctedLR = correctedLR + missingPart.substr(src.length());
+							nbSeedsBases = nbSeedsBases + tgt.size();
 						}
+						nbGraphBases = nbGraphBases + missingPart.size() - src.size() - tgt.size();
 						src = tgt;
 						posSrc = posTgt;
 						if (seedsSkips > (seeds.size() - 1) - idSeed - 1) {
@@ -314,7 +379,7 @@ namespace CLRgen {
 						nextReachable = tmpMissingPart.length() == 0 ? -1 : idTmp - 1;
 						skippedSeeds = tmpMissingPart.length() == 0 ? 0 : tmpSkips - 1;
 						firstSkippedSeed = skippedSeeds > 0 ? idSeed + 1 : -1;
-					// Seeds couldn't be linked, skip a seed or split the corrected long read 
+					// Seeds couldn't be linked, skip a seed or get missing nucleotides from the raw long read 
 					} else {
 						// Skip the target if the allowed number of skips isn't reached
 						if (skippedSeeds < seedsSkips) {
@@ -322,17 +387,13 @@ namespace CLRgen {
 							if (firstSkippedSeed == -1) {
 								firstSkippedSeed = idSeed;
 							}
-						// Split the corrected long read
+						
+						// Get missing nucleotides from the raw long read
 						} else {
 							if (!correctedLR.empty()) {
-								if (posBeg > 0) {
-									extendLeft(posBeg, correctedLR);
-								}
-								if ((int) (LRLen - posSrc - src.length()) > 0) {
-									extendRight(LRLen - posSrc - src.length(), correctedLR);
-								}
-								fRes << ">" << LRId << "_" << fragments << endl << correctedLR << endl;
-								fragments++;
+								rawPart = rawSeq.substr(posSrc + src.length(), seeds[idSeed - seedsSkips].pos - 1 * (posSrc + src.length()));
+								correctedLR = correctedLR + rawPart;
+								nbRawBases = nbRawBases + rawPart.size();
 							}
 							
 							// Update data
@@ -342,12 +403,16 @@ namespace CLRgen {
 							curSeed = seeds[idSeed];
 							src = curSeed.seq;
 							posSrc = curSeed.pos;
-							posBeg = posSrc;
-							correctedLR = string();
 							firstSkippedSeed = -1;
 							skippedSeeds = 0;
 							if (seedsSkips > (seeds.size() - 1) - idSeed - 1) {
 								seedsSkips = (seeds.size() - 1) - idSeed - 1;
+							}
+							
+							// If the unreachable seed is the last one, add it to the corrected long read sequence
+							if (idSeed == seeds.size() - 1) {
+								correctedLR = correctedLR + src;
+								nbSeedsBases = nbSeedsBases + src.length();
 							}
 						}
 					}
@@ -355,31 +420,38 @@ namespace CLRgen {
 					idSeed = nextReachable != -1 ? nextReachable : idSeed + 1;
 				}
 
-				// Multiple seeds were mapped on the long read and were linked
-				if (!correctedLR.empty()) {
-					if (posBeg > 0) {
-						extendLeft(posBeg, correctedLR);
-					}
-					if ((int) (LRLen - posSrc - src.length()) > 0) {
-						extendRight(LRLen - posSrc - src.length(), correctedLR);
-					}
-					if (fragments == 1) {
-						fRes << ">" << LRId << endl << correctedLR << endl;
-					} else {
-						fRes << ">" << LRId << "_" << fragments << endl << correctedLR << endl;
-					}
-				}
-
-				// Only one seed was mapped on the long read
+				// If only one seed mapped to the long read, process and extend it
 				if (seeds.size() < 2) {
-					int srcLen = src.length();
+					correctedLR = src;
+					nbSeedsBases = nbSeedsBases + src.length();
+				}
+				
+				// Extend the tips of the corrected long read, and output it
+				if (!correctedLR.empty()) {
+					// Extend with the graph as much as possible
 					if (posBeg > 0) {
-						extendLeft(posBeg, src);
+						dist = extendLeft(posBeg, correctedLR);
+						nbGraphBases = nbGraphBases + dist;
+						posBeg = posBeg - dist;
 					}
-					if ((int) (LRLen - posSrc - srcLen) > 0) {
-						extendRight(LRLen - posSrc - srcLen, src);
+					posEnd = posSrc + src.length();
+					if ((int) LRLen - posEnd - 1 > 0) {
+						dist = extendRight(LRLen - posEnd - 1, correctedLR);
+						nbGraphBases = nbGraphBases + dist;
+						posEnd = posEnd + dist;
 					}
-					fRes << ">" << LRId << endl << src << endl;
+					
+					// Complete the extension with raw bases to reach the initial long read's borders
+					if (posBeg > 0) {
+						correctedLR = rawSeq.substr(0, posBeg) + correctedLR;
+						nbRawBases = nbRawBases + posBeg;
+					}
+					if ((int) LRLen - posEnd - 1 > 0) {
+						correctedLR = correctedLR + rawSeq.substr(posEnd + 1, LRLen - posEnd - 1);
+						nbRawBases = nbRawBases + LRLen - posEnd - 1;
+					}
+					
+					fRes << ">" << LRId << "_" << nbSeedsBases << "_" << nbGraphBases << "_" << nbRawBases << endl << correctedLR << endl;
 				}
 				
 				outMtx.lock();
@@ -391,7 +463,7 @@ namespace CLRgen {
 		}
 	}
 		
-	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned nbThreads) {
+	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads) {
 		// Global variables
 		pgsaIndex = index;
 		minOrder = minorder;
@@ -399,6 +471,7 @@ namespace CLRgen {
 		maxBranches = maxbranches;
 		seedsOverlap = seedsoverlap;
 		maxSeedsSkips = maxseedsskips;
+		misMatches = mismatches;
 		tmpDir = tmpdir;
 		
 		// KMC database, for counting K-mers
