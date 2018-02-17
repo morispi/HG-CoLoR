@@ -49,9 +49,7 @@ namespace CLRgen {
 		string line;
 		ifstream f(readId);
 		getline (f, line);
-		//~ cerr << "line : " << line << endl;
 		getline (f, line);
-		//~ cerr << "line : " << line << endl;
 		f.close();
 		
 		return line;
@@ -60,11 +58,14 @@ namespace CLRgen {
     // Returns the number of difference between s1 and s2
     unsigned getDifferences(string s1, string s2) {
 		unsigned diff = 0;
-		for (unsigned i = 0; i < s1.size(); i++) {
+		unsigned max = s1.size() > s2.size() ? s1.size() : s2.size();
+		unsigned min = s1.size() < s2.size() ? s1.size() : s2.size();
+		for (unsigned i = 0; i < min; i++) {
 			if (s1[i] != s2[i]) {
 				diff++;
 			}
 		}
+		diff = diff + max - min;
 		return diff;
 	}
     
@@ -329,12 +330,12 @@ namespace CLRgen {
 					missingPart = string();
 					
 					// Search for a path between the source and the target
-					linked = link(src, tgt, maxOrder, visited, &curBranches, 0, src, missingPart, LRLen);
+					linked = link(src, tgt, maxOrder, visited, &curBranches, 0, src, missingPart, 30.0 / 100.0 * 6.0 * (posTgt - posSrc - src.size()) + posTgt - posSrc - src.size() + maxOrder);
 					if (!linked) {
 						visited.clear();
 						curBranches = 0;
 						missingPart = string();
-						linked = link(revComp(tgt, tgt.size()), revComp(src, src.size()), maxOrder, visited, &curBranches, 0, revComp(tgt, tgt.size()), missingPart, LRLen);
+						linked = link(revComp(tgt, tgt.size()), revComp(src, src.size()), maxOrder, visited, &curBranches, 0, revComp(tgt, tgt.size()), missingPart, 30.0 / 100.0 * 6.0 * (posTgt - posSrc - src.size()) + posTgt - posSrc - src.size() + maxOrder);
 						missingPart = revComp(missingPart, missingPart.size());
 					}
 					visited.clear();
@@ -348,12 +349,12 @@ namespace CLRgen {
 						tmpSeed = seeds[idTmp].seq;
 						curBranches = 0;
 						tmpMissingPart = string();
-						isLinkable = link(tgt, tmpSeed, maxOrder, visited, &curBranches, 0, tgt, tmpMissingPart, LRLen);
+						isLinkable = link(tgt, tmpSeed, maxOrder, visited, &curBranches, 0, tgt, tmpMissingPart, 30.0 / 100.0 * 6.0 * (seeds[idTmp].pos - posTgt - tgt.size()) + seeds[idTmp].pos - posTgt - tgt.size() + maxOrder);
 						if (!isLinkable) {
 							visited.clear();
 							curBranches = 0;
 							tmpMissingPart = string();
-							isLinkable = link(revComp(tmpSeed, tmpSeed.size()), revComp(tgt, tgt.size()), maxOrder, visited, &curBranches, 0, revComp(tmpSeed, tmpSeed.size()), tmpMissingPart, LRLen);
+							isLinkable = link(revComp(tmpSeed, tmpSeed.size()), revComp(tgt, tgt.size()), maxOrder, visited, &curBranches, 0, revComp(tmpSeed, tmpSeed.size()), tmpMissingPart, 30.0 / 100.0 * 6.0 * (seeds[idTmp].pos - posTgt - tgt.size()) + seeds[idTmp].pos - posTgt - tgt.size() + maxOrder);
 							tmpMissingPart = revComp(tmpMissingPart, tmpMissingPart.size());
 						}
 						visited.clear();
@@ -362,7 +363,7 @@ namespace CLRgen {
 					}
 					
 					// Seeds were linked, update the missing part of the long read
-					if (linked != 0 && isLinkable) {
+					if (linked != 0 && isLinkable) { // && montest <= 10.0 / 100.0 * float(min(missingPart.size(), tmpMissingPart.size()))) {
 						if (correctedLR.empty()) {
 							correctedLR = missingPart;
 							nbSeedsBases = nbSeedsBases + src.size() + tgt.size();
