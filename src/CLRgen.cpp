@@ -20,8 +20,9 @@ int main(int argc, char *argv[]) {
     int maxbranches = 1500;
     int seedskips = 5;
     int nbThreads = 1;
+    int mismatches = 3;
 
-    while ((opt = getopt(argc, argv, "c:K:t:o:k:b:s:j:?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:K:t:o:k:b:s:j:m:?")) != -1) {
         switch (opt) {
 			case 'c':
 				cacheFile = optarg;
@@ -44,6 +45,9 @@ int main(int argc, char *argv[]) {
 			case 's':
 				seedskips = atoi(optarg);
 				break;
+			case 'm':
+				mismatches = atoi(optarg);
+				break;
 			case 'j':
 				nbThreads = atoi(optarg);
 				break;
@@ -64,7 +68,7 @@ int main(int argc, char *argv[]) {
 
     PgSAIndexStandard* idx = prepareIndex(idxFile, cacheFile);
     
-    CLRgen::startCorrection(idx, maxorder, tmpDir, seedsoverlap, minorder, maxbranches, seedskips, nbThreads);
+    CLRgen::startCorrection(idx, maxorder, tmpDir, seedsoverlap, minorder, maxbranches, seedskips, mismatches, nbThreads);
     
     delete(idx);
 
