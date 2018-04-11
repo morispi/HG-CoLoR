@@ -246,7 +246,7 @@ rm $tmpdir/"$aln"
 ls $tmpdir/Alignments/ > $tmpdir/"$seeds"
 
 echo "["$(date)"] Generating the corrected long reads"
-$hgf/bin/CLRgen -t "$tmpdir" -K "$K" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -j "$nproc" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
+$hgf/bin/CLRgen -t "$tmpdir" -K "$K" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -m "$mismatches" -j "$nproc" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
 $hgf/bin/trim.py "$out.fasta" > "$out.trim.fasta"
 $hgf/bin/split.py "$out.trim.fasta" > "$out.split.fasta"
 
