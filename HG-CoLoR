@@ -10,33 +10,34 @@ function print_help {
 	echo "if using a set of short reads with a much higher coverage and/or a highly different error rate."
 	echo ""
 	echo "	Input:"
-	echo "	LR.fasta:                   fasta file of long reads, one sequence per line."
-	echo "	SR.fastq:                   fastq file of short reads."
-	echo "	                            Warning: only one file must be provided."
-	echo "	                            If using paired reads, please concatenate them into one single file."
-	echo "	resultPrefix:               Prefix of the fasta files where to output the corrected, trim and split long reads."
-	echo "	maxK:                       Maximum K-mer size of the variable-order de Bruijn graph."
+	echo "	LR.fasta:                      fasta file of long reads, one sequence per line."
+	echo "	SR.fastq:                      fastq file of short reads."
+	echo "	                               Warning: only one file must be provided."
+	echo "	                               If using paired reads, please concatenate them into one single file."
+	echo "	resultPrefix:                  Prefix of the fasta files where to output the corrected, trim and split long reads."
+	echo "	maxK:                          Maximum K-mer size of the variable-order de Bruijn graph."
 	echo ""
 	echo "	Options:"
-	echo "	--minorder INT, -k INT:     Minimum k-mer size of the variable-order de Bruijn graph (default: K/2)."
-	echo "	--solid INT, -S INT:        Minimum number of occurrences to consider a short read k-mer as solid, after correction (default: 1)."
-	echo "	                            This parameter should be carefully raised accordingly to the short reads coverage and accuracy,"
-	echo "	                            and to the chosen maximum order of the graph."
-	echo "                              It should only be increased when using high coverage of short reads, or a small maximum order."
-	echo "	--seedsoverlap INT, -o INT: Minimum overlap length to allow the merging of two overlapping seeds (default: K - 1)."
-	echo "	--branches INT, -b INT:     Maximum number of branches exploration (default: 1,250)."
-	echo "	                            Raising this parameter will result in less split corrected long reads."
-	echo "	                            However, it will also increase the runtime, and may create chimeric linkings between the seeds."
-	echo "	--seedskips INT, -s INT:    Maximum number of seed skips (default: 3)."
-	echo "	--mismatches INT, -m INT:   Allowed mismatches when attempting to link two seeds together (default: 3)."
-	echo "	--bestn INT, -n INT:        Top alignments to be reported by BLASR (default: 50)."
-	echo "	                            This parameter should be raised accordingly to the short reads coverage."
-	echo "	                            Its default value is adapted for a 50x coverage of short reads."
-	echo "                              It should be decreased with higher coverage, and increased with lower coverage."
-	echo "	--nproc INT, -j INT:        Number of processes to run in parallel (default: number of cores)."
-	echo "	--tmpdir STRING, -t STRING: Path where to store the directory containing temporary files (default: working directory)."
-	echo "	--kmcmem INT, -r INT:       Maximum amount of RAM for KMC, in GB (default: 12)."
-	echo "	--help, -h:                 Print this help message."
+	echo "	--minorder INT, -k INT:        Minimum k-mer size of the variable-order de Bruijn graph (default: K/2)."
+	echo "	--solid INT, -S INT:           Minimum number of occurrences to consider a short read k-mer as solid, after correction (default: 1)."
+	echo "	                               This parameter should be carefully raised accordingly to the short reads coverage and accuracy,"
+	echo "	                               and to the chosen maximum order of the graph."
+	echo "                                 It should only be increased when using high coverage of short reads, or a small maximum order."
+	echo "	--seedsoverlap INT, -o INT:    Minimum overlap length to allow the merging of two overlapping seeds (default: K - 1)."
+	echo "  --seedsdistance INT, -d INT:   Maximum distance to consider two consecutive seeds for merging (default: 10)."
+	echo "	--branches INT, -b INT:        Maximum number of branches exploration (default: 1,250)."
+	echo "	                               Raising this parameter will result in less split corrected long reads."
+	echo "	                               However, it will also increase the runtime, and may create chimeric linkings between the seeds."
+	echo "	--seedskips INT, -s INT:       Maximum number of seed skips (default: 3)."
+	echo "	--mismatches INT, -m INT:      Allowed mismatches when attempting to link two seeds together (default: 3)."
+	echo "	--bestn INT, -n INT:           Top alignments to be reported by BLASR (default: 50)."
+	echo "	                               This parameter should be raised accordingly to the short reads coverage."
+	echo "	                               Its default value is adapted for a 50x coverage of short reads."
+	echo "                                 It should be decreased with higher coverage, and increased with lower coverage."
+	echo "	--nproc INT, -j INT:           Number of processes to run in parallel (default: number of cores)."
+	echo "	--tmpdir STRING, -t STRING:    Path where to store the directory containing temporary files (default: working directory)."
+	echo "	--kmcmem INT, -r INT:          Maximum amount of RAM for KMC, in GB (default: 12)."
+	echo "	--help, -h:                    Print this help message."
 	exit 1
 }
 
@@ -47,6 +48,7 @@ shortreads=""
 SR=""
 K=0
 seedsoverlap=0
+seedsdistance=10
 k=0
 solid=1
 branches=1250
@@ -103,6 +105,10 @@ while [[ "$1" != "" ]] ; do
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
 				*) seedsoverlap="$2" ; shift 2 ;;
 			esac ;;
+		"--seedsdistance"|"-d")
+			case "$2" in
+				"") echo "Error: $1 expects an argument" ; exit 1 ;;
+				*) seedsdistance="$2" ; shift 2 ;;
 		"--branches"|"-b")
 			case "$2" in
 				"") echo "Error: $1 expects an argument" ; exit 1 ;;
@@ -246,7 +252,7 @@ rm $tmpdir/"$aln"
 ls $tmpdir/Alignments/ > $tmpdir/"$seeds"
 
 echo "["$(date)"] Generating the corrected long reads"
-$hgf/bin/CLRgen -t "$tmpdir" -K "$K" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -m "$mismatches" -j "$nproc" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
+$hgf/bin/CLRgen -t "$tmpdir" -K "$K" -d "$seedsdistance" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -m "$mismatches" -j "$nproc" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
 $hgf/bin/trim.py "$out.fasta" > "$out.trim.fasta"
 $hgf/bin/split.py "$out.trim.fasta" > "$out.split.fasta"
 

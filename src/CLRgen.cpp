@@ -16,13 +16,14 @@ int main(int argc, char *argv[]) {
     string cacheFile;
     string tmpDir;
     int seedsoverlap = maxorder - 1;
+    int seedsdistance = 10;
     int minorder = maxorder / 2;
     int maxbranches = 1500;
     int seedskips = 5;
     int nbThreads = 1;
     int mismatches = 3;
 
-    while ((opt = getopt(argc, argv, "c:K:t:o:k:b:s:j:m:?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:K:t:o:d:k:b:s:j:m:?")) != -1) {
         switch (opt) {
 			case 'c':
 				cacheFile = optarg;
@@ -35,6 +36,9 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'o':
 				seedsoverlap = atoi(optarg);
+				break;
+			case 'd':
+				seedsdistance = atoi(optarg);
 				break;
 			case 'k':
 				minorder = atoi(optarg);
@@ -53,7 +57,7 @@ int main(int argc, char *argv[]) {
 				break;
 			case '?':
 			default: /* '?' */
-				fprintf(stderr, "Usage: %s [-K maxOrder] [-t tmpDir] [-o seedsOverlap] [-k minOrder] [-b maxBranches] [-s seedsSkips] [-j threadsNb] [-c cachefile] indexfile\n\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-K maxOrder] [-t tmpDir] [-o seedsOverlap] [-d seedsMaxDistances] [-k minOrder] [-b maxBranches] [-s seedsSkips] [-j threadsNb] [-c cachefile] indexfile\n\n", argv[0]);
 				exit(EXIT_FAILURE);
         }
     }
@@ -68,7 +72,7 @@ int main(int argc, char *argv[]) {
 
     PgSAIndexStandard* idx = prepareIndex(idxFile, cacheFile);
     
-    CLRgen::startCorrection(idx, maxorder, tmpDir, seedsoverlap, minorder, maxbranches, seedskips, mismatches, nbThreads);
+    CLRgen::startCorrection(idx, maxorder, tmpDir, seedsdistance, seedsoverlap, minorder, maxbranches, seedskips, mismatches, nbThreads);
     
     delete(idx);
 

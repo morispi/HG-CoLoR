@@ -10,6 +10,7 @@ namespace CLRgen {
     unsigned maxOrder;
     unsigned minOrder;
     unsigned seedsOverlap;
+    unsigned seedsDistance;
     unsigned maxBranches;
     recursive_mutex occMtx;
     mutex outMtx, PgSAMtx;
@@ -171,7 +172,7 @@ namespace CLRgen {
 	}
 	
 	int link(string srcSeed, string tgtSeed, unsigned curK, set<string> &visited, unsigned* curBranches, unsigned dist, string curExt, string &missingPart, unsigned LRLen) {
-		if (curK <= minOrder || *curBranches > maxBranches || dist > LRLen) {
+		if (curK < minOrder || *curBranches > maxBranches || dist > LRLen) {
 				missingPart = string();
 				return 0;
 		}
@@ -258,7 +259,7 @@ namespace CLRgen {
 		
 		// If the source couldn't be linked to the destination, try again with a graph of smaller order, otherwhise update the missing part and return
 		if (!found) {
-			if (curK - 1 > minOrder && dist < LRLen) {
+			if (curK > minOrder && dist < LRLen) {
 				return link(srcSeed, tgtSeed, curK - 1, visited, curBranches, dist, curExt, missingPart, LRLen);
 			} else {
 				missingPart = string();
@@ -302,7 +303,7 @@ namespace CLRgen {
 			nbRawBases = 0;
 			
 			// Merge the overlapping seeds of the current long read
-			seeds = processSeeds(tmpDir + "/Alignments/" + LRId, seedsOverlap);
+			seeds = processSeeds(tmpDir + "/Alignments/" + LRId, seedsDistance, seedsOverlap);
 			// Get the raw sequence of the current long read
 			rawSeq = getRawRead(tmpDir + "/RawLongReads/" + LRId);
 			
@@ -464,13 +465,14 @@ namespace CLRgen {
 		}
 	}
 		
-	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads) {
+	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads) {
 		// Global variables
 		pgsaIndex = index;
 		minOrder = minorder;
 		maxOrder = maxorder;
 		maxBranches = maxbranches;
 		seedsOverlap = seedsoverlap;
+		seedsDistance = seedsdistance;
 		maxSeedsSkips = maxseedsskips;
 		misMatches = mismatches;
 		tmpDir = tmpdir;

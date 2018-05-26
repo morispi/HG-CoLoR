@@ -49,15 +49,13 @@ void mergeOverlappingPosSeeds(vector<seed_t> &seeds, unsigned minOverlap) {
   unsigned j = 1;
   string s1;
   string s2;
-  int b1;
   int cplen;
   
   // Iterate through the seeds list
   while (i < seeds.size() - 1 && j < seeds.size()) {
 	// Check if the two current seeds overlap
-    if (seeds[i].pos != -1 && seeds[j].pos >= seeds[i].pos && seeds[j].pos <= seeds[i].pos + seeds[i].alen) {
-      b1 = seeds[j].pos - seeds[i].pos;
-      s1 = seeds[i].seq.substr(b1);
+    if (seeds[j].pos <= seeds[i].pos + seeds[i].alen) {
+      s1 = seeds[i].seq.substr(seeds[j].pos - seeds[i].pos);
       s2 = seeds[j].seq.substr(0, s1.length());
       // If the overlap is long enough, and if their overlapping sequences match, merge the two seeds
       if (seeds[j].pos + seeds[j].alen > seeds[i].pos + seeds[i].alen && s1.length() >= minOverlap && s1 == s2) {
@@ -65,7 +63,6 @@ void mergeOverlappingPosSeeds(vector<seed_t> &seeds, unsigned minOverlap) {
         seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(seeds[j].alen - cplen);
         seeds[i].alen = seeds[i].alen + cplen;
         seeds[i].score = seeds[i].score + (seeds[j].score / seeds[j].alen) * (cplen);
-        seeds[i].nb++;
         seeds.erase(seeds.begin() + j);
       // Othewhise, keep the seed with the best alignment score
      } else if (seeds[i].score < seeds[j].score) {
@@ -81,7 +78,7 @@ void mergeOverlappingPosSeeds(vector<seed_t> &seeds, unsigned minOverlap) {
   }
 }
 
-void mergeOverlappingSeqSeeds(vector<seed_t> &seeds, int minOverlap) {
+void mergeOverlappingSeqSeeds(vector<seed_t> &seeds, int maxDistance, int minOverlap) {
   unsigned i = 0;
   unsigned j = 1;
   int overlap;
@@ -89,18 +86,19 @@ void mergeOverlappingSeqSeeds(vector<seed_t> &seeds, int minOverlap) {
   
   // Iterate through the seeds list
   while (i < seeds.size() - 1 && j < seeds.size()) {
-	overlap = overlapLength(seeds[i].seq, seeds[j].seq);
-	// If the two current seeds overlap on a sufficient length, merge them
-	if (overlap >= minOverlap) {
-		cplen = seeds[j].alen - overlap;
-        seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(overlap);
-		seeds[i].alen = seeds[i].alen + cplen;
-		seeds[i].score = seeds[i].score + seeds[j].score / 2;
-		seeds[i].nb++;
-		seeds.erase(seeds.begin() + j);
-	} else {
-		i = j;
-		j++;
+	// If the two current seeds are close enough, check if their sequences overlap
+	if (seeds[j].pos - seeds[i].pos - seeds[i].alen <= maxDistance) {
+		overlap = overlapLength(seeds[i].seq, seeds[j].seq);
+		// If the two current seeds overlap on a sufficient length, merge them
+		if (overlap >= minOverlap) {
+			cplen = seeds[j].alen - overlap;
+	        seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(overlap);
+			seeds[i].alen = seeds[i].alen + cplen;
+			seeds.erase(seeds.begin() + j);
+		} else {
+			i = j;
+			j++;
+		}
 	}
   }
 }
@@ -163,7 +161,7 @@ vector<seed_t> readAlignmentFile(string alFile) {
 	return seeds;
 }
 
-vector<seed_t> processSeeds(string alFile, unsigned minOverlap) {
+vector<seed_t> processSeeds(string alFile, unsigned maxDistance, unsigned minOverlap) {
 	vector<seed_t> seeds = readAlignmentFile(alFile);
   
 	// Sort the seeds according to their mapping positions
@@ -171,7 +169,8 @@ vector<seed_t> processSeeds(string alFile, unsigned minOverlap) {
 	
 	// Merge the seeds
 	mergeOverlappingPosSeeds(seeds, minOverlap);
-	mergeOverlappingSeqSeeds(seeds, minOverlap);
+	mergeOverlappingSeqSeeds(seeds, maxDistance, minOverlap);
 
 	return seeds;
 } 
+

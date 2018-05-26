@@ -55,6 +55,7 @@ namespace CLRgen {
 	 * index: PgSA index
 	 * maxOrder: maximum order of the variable-order de Bruijn graph
 	 * tmpDir: directory containing the temporary files (long readss to be corrected and associated seeds)
+	 * seedsdistance: maximum distance allowed between two consecutive seeds during the second merging phase
 	 * seedsoverlap: minimum overlap required to allow the merging of two overlapping seeds
 	 * minorder: minimum order of the variable-order de Bruijn graph
 	 * maxbranches: maximum number of branches exploration allowed
@@ -62,7 +63,7 @@ namespace CLRgen {
 	 * mismatches: mismatch threshold tolerance
 	 * nbThreads: number of threads to use
 	 */ 
-    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads);
+    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads);
 }
 
 #endif	/* SEEDSLNK_H */
