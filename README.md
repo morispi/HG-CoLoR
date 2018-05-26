@@ -72,6 +72,7 @@ where
                                     and to the chosen maximum order of the graph.
                                     It should only be increased when using high coverage of short reads, or a small maximum order.
       --seedsoverlap INT, -o INT:   Minimum overlap length to allow the merging of two overlapping seeds (default: maxorder - 1).
+      --seedsdistance INT, -d INT:   Maximum distance to consider two consecutive seeds for merging (default: 10).
       --branches INT, -b INT:       Maximum number of branches exploration (default: 1,500).
                                     Raising this parameter will result in less split corrected long reads.
                                     However, it will also increase the runtime, and may create chimeric links between the seeds.
@@ -105,7 +106,7 @@ Pierre Morisse, Thierry Lecroq and Arnaud Lefebvre.
 Reference
 --------------
 
-HG-CoLoR is currently subimitted to Bioinformatics under the title "Hybrid correction of highly noisy Oxford Nanopore long reads using a variable-order de Bruijn graph".
+HG-CoLoR is currently subimitted to Bioinformatics under the title "Hybrid correction of highly noisy long reads using a variable-order de Bruijn graph".
 
 Contact
 --------------
