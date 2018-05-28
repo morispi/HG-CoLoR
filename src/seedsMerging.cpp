@@ -45,62 +45,65 @@ int overlapLength(string s1, string s2) {
 	}
 
 void mergeOverlappingPosSeeds(vector<seed_t> &seeds, unsigned minOverlap) {
-  unsigned i = 0;
-  unsigned j = 1;
-  string s1;
-  string s2;
-  int cplen;
+	unsigned i = 0;
+  	unsigned j = 1;
+  	string s1;
+  	string s2;
+  	int cplen;
   
-  // Iterate through the seeds list
-  while (i < seeds.size() - 1 && j < seeds.size()) {
-	// Check if the two current seeds overlap
-    if (seeds[j].pos <= seeds[i].pos + seeds[i].alen) {
-      s1 = seeds[i].seq.substr(seeds[j].pos - seeds[i].pos);
-      s2 = seeds[j].seq.substr(0, s1.length());
-      // If the overlap is long enough, and if their overlapping sequences match, merge the two seeds
-      if (seeds[j].pos + seeds[j].alen > seeds[i].pos + seeds[i].alen && s1.length() >= minOverlap && s1 == s2) {
-        cplen = seeds[j].pos + seeds[j].alen - seeds[i].pos - seeds[i].alen;
-        seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(seeds[j].alen - cplen);
-        seeds[i].alen = seeds[i].alen + cplen;
-        seeds[i].score = seeds[i].score + (seeds[j].score / seeds[j].alen) * (cplen);
-        seeds.erase(seeds.begin() + j);
-      // Othewhise, keep the seed with the best alignment score
-     } else if (seeds[i].score < seeds[j].score) {
-        seeds.erase(seeds.begin() + j);
-      } else {
-        seeds.erase(seeds.begin() + i);
-      }
-    // The two seeds don't overlap, move to the next ones
-    } else {
-		i = j;
-		j++;
-	}
-  }
+  	// Iterate through the seeds list
+  	while (i < seeds.size() - 1 && j < seeds.size()) {
+		// Check if the two current seeds overlap
+	    if (seeds[j].pos <= seeds[i].pos + seeds[i].alen) {
+      		s1 = seeds[i].seq.substr(seeds[j].pos - seeds[i].pos);
+      		s2 = seeds[j].seq.substr(0, s1.length());
+      		// If the overlap is long enough, and if their overlapping sequences match, merge the two seeds
+      		if (seeds[j].pos + seeds[j].alen > seeds[i].pos + seeds[i].alen && s1.length() >= minOverlap && s1 == s2) {
+        		cplen = seeds[j].pos + seeds[j].alen - seeds[i].pos - seeds[i].alen;
+        		seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(seeds[j].alen - cplen);
+        		seeds[i].alen = seeds[i].alen + cplen;
+        		seeds[i].score = seeds[i].score + (seeds[j].score / seeds[j].alen) * (cplen);
+        		seeds.erase(seeds.begin() + j);
+      		// Othewhise, keep the seed with the best alignment score
+      		} else if (seeds[i].score < seeds[j].score) {
+		        seeds.erase(seeds.begin() + j);
+      		} else {
+        		seeds.erase(seeds.begin() + i);
+      		}
+    	// The two seeds don't overlap, move to the next ones
+    	} else {
+			i = j;
+			j++;
+		}
+  	}
 }
 
 void mergeOverlappingSeqSeeds(vector<seed_t> &seeds, int maxDistance, int minOverlap) {
-  unsigned i = 0;
-  unsigned j = 1;
-  int overlap;
-  int cplen;
+  	unsigned i = 0;
+  	unsigned j = 1;
+  	int overlap;
+  	int cplen;
   
-  // Iterate through the seeds list
-  while (i < seeds.size() - 1 && j < seeds.size()) {
-	// If the two current seeds are close enough, check if their sequences overlap
-	if (seeds[j].pos - seeds[i].pos - seeds[i].alen <= maxDistance) {
-		overlap = overlapLength(seeds[i].seq, seeds[j].seq);
-		// If the two current seeds overlap on a sufficient length, merge them
-		if (overlap >= minOverlap) {
-			cplen = seeds[j].alen - overlap;
-	        seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(overlap);
-			seeds[i].alen = seeds[i].alen + cplen;
-			seeds.erase(seeds.begin() + j);
+  	// Iterate through the seeds list
+  	while (i < seeds.size() - 1 && j < seeds.size()) {
+	    // If the two current seeds are close enough, check if their sequences overlap
+		if (seeds[j].pos - seeds[i].pos - seeds[i].alen <= maxDistance) {
+			overlap = overlapLength(seeds[i].seq, seeds[j].seq);
+			// If the two current seeds overlap on a sufficient length, merge them
+			if (overlap >= minOverlap) {
+				cplen = seeds[j].alen - overlap;
+	        	seeds[i].seq = seeds[i].seq + seeds[j].seq.substr(overlap);
+				seeds[i].alen = seeds[i].alen + cplen;
+				seeds.erase(seeds.begin() + j);
+			} else {
+				i = j;
+				j++;
+			}
 		} else {
 			i = j;
 			j++;
 		}
-	}
-  }
+  	}
 }
 
 int getLongReadLength(string tpl) {
