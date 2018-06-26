@@ -106,7 +106,7 @@ Pierre Morisse, Thierry Lecroq and Arnaud Lefebvre.
 Reference
 --------------
 
-HG-CoLoR is currently subimitted to Bioinformatics under the title "Hybrid correction of highly noisy long reads using a variable-order de Bruijn graph".
+The HG-CoLoR paper is accepted for publication in Bioinformatics under the title "Hybrid correction of highly noisy long reads using a variable-order de Bruijn graph"!
 
 Contact
 --------------
