@@ -184,10 +184,8 @@ if [[ -f $out ]] ; then
 fi
 
 #Create the directory for temporary files
-if [[ -d $tmpdir ]] ; then
-	tmpdir="$tmpdir/HGC_"$$
-        mkdir -p $tmpdir
-fi
+tmpdir="$tmpdir/HGC_"$$
+mkdir -p $tmpdir
 
 #Create the subdirectory for alignments files, if it does not exist
 if [[ ! -d $tmpdir/Alignments ]] ; then
