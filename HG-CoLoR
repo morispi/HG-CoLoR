@@ -236,7 +236,7 @@ kmc_dump -ci"$solid" $tmpdir/mers.db $tmpdir/"dumped_$K-mers" >> HG-CoLoR.stdout
 cut -f 1 $tmpdir/"dumped_$K-mers" > $tmpdir/"$K-mers.fa"
 echo "----- PgSAgen -----" >> HG-CoLoR.stdout
 echo "----- PgSAgen -----" >> HG-CoLoR.stderr
-$hgf/bin/PgSAgen $tmpdir/"$K-mers.fa" $tmpdir/"$K-mers.fa" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+$hgf/PgSA/dist/pgsagen/GNU-Linux-x86/PgSAgen $tmpdir/"$K-mers.fa" $tmpdir/"$K-mers.fa" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 
 echo "["$(date)"] Preparing the raw long reads temporary files"
 $hgf/bin/formatLongReads.py "$longreads" > $tmpdir/"$formatLR"
