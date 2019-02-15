@@ -20,12 +20,15 @@ EXECS=HG-CoLoR
 all: $(EXECS)
 
 HG-CoLoR: seedsMerging.o seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) main.o
-	$(CC) -o bin/HG-CoLoR src/seedsMerging.o src/seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) src/main.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
+	$(CC) -o bin/HG-CoLoR src/reverseComplement.o src/seedsMerging.o src/seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) src/main.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
+
+reverseComplement.o: src/reverseComplement.cpp
+	$(CC) -o src/reverseComplement.o -c src/reverseComplement.cpp $(CFLAGS)
 
 seedsMerging.o: src/seedsMerging.cpp
 	$(CC) -o src/seedsMerging.o -c src/seedsMerging.cpp $(CFLAGS)
 
-seedsLinking.o: src/seedsLinking.cpp src/seedsMerging.h src/seedsLinking.h
+seedsLinking.o: src/seedsLinking.cpp src/seedsMerging.h src/seedsLinking.h src/reverseComplement.h
 	$(CC) -o src/seedsLinking.o -c src/seedsLinking.cpp $(CFLAGS) $(LDFLAGS) -I$(PGSA_SRC)
 
 $(KMC_QUERY_OBJS): %.o: %.cpp

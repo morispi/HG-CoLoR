@@ -1,5 +1,6 @@
 #include "seedsLinking.h"
 #include "kmc_query/kmc_query.h"
+#include "reverseComplement.h"
 #include <chrono>
 #include <mutex>
 #include <future>
@@ -22,30 +23,6 @@
     typedef DefaultPgSAIndex<uint_reads_cnt_std, unsigned int
         , uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std,
             DefaultSuffixArrayOfConstantLengthTypeTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std, 4>::Type> PgSAIndexStandardImpl;
-            
-    string revComp(string seq, int len) {
-        string res = string(seq);
-        for (int i = 0; i < len; i++) {
-                switch(seq[i]) {
-                        case 'A':
-                                res[len-i-1] = 'T';
-                                break;
-                        case 'C':
-                                res[len-i-1] = 'G';
-                                break;
-                        case 'G':
-                                res[len-i-1] = 'C';
-                                break;
-                        case 'T':
-                                res[len-i-1] = 'A';
-                                break;
-                        default:
-                                res[len-i-1] = 'N';
-                                break;
-                }
-        }
-        return res;
-	}
 
 	std::vector<bool> fullstr2num(const string& str){
 	  std::vector<bool> res;
@@ -431,8 +408,8 @@
 						visited.clear();
 						curBranches = 0;
 						missingPart = string();
-						linked = link(revComp(tgt, tgt.size()), revComp(src, src.size()), maxOrder, visited, &curBranches, 0, revComp(tgt, tgt.size()), missingPart, 30.0 / 100.0 * 6.0 * (posTgt - posSrc - src.size()) + posTgt - posSrc - src.size() + maxOrder);
-						missingPart = revComp(missingPart, missingPart.size());
+						linked = link(rev_comp::run(tgt), rev_comp::run(src), maxOrder, visited, &curBranches, 0, rev_comp::run(tgt), missingPart, 30.0 / 100.0 * 6.0 * (posTgt - posSrc - src.size()) + posTgt - posSrc - src.size() + maxOrder);
+						missingPart = rev_comp::run(missingPart);
 					}
 					visited.clear();
 					idTmp = idSeed + 1;
@@ -450,8 +427,8 @@
 							visited.clear();
 							curBranches = 0;
 							tmpMissingPart = string();
-							isLinkable = link(revComp(tmpSeed, tmpSeed.size()), revComp(tgt, tgt.size()), maxOrder, visited, &curBranches, 0, revComp(tmpSeed, tmpSeed.size()), tmpMissingPart, 30.0 / 100.0 * 6.0 * (seeds[idTmp].pos - posTgt - tgt.size()) + seeds[idTmp].pos - posTgt - tgt.size() + maxOrder);
-							tmpMissingPart = revComp(tmpMissingPart, tmpMissingPart.size());
+							isLinkable = link(rev_comp::run(tmpSeed), rev_comp::run(tgt), maxOrder, visited, &curBranches, 0, rev_comp::run(tmpSeed), tmpMissingPart, 30.0 / 100.0 * 6.0 * (seeds[idTmp].pos - posTgt - tgt.size()) + seeds[idTmp].pos - posTgt - tgt.size() + maxOrder);
+							tmpMissingPart = rev_comp::run(tmpMissingPart);
 						}
 						visited.clear();
 						idTmp++;
