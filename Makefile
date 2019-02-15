@@ -19,7 +19,7 @@ $(KMC_QUERY_DIR)/kmc_query.o
 EXECS=HG-CoLoR
 all: $(EXECS)
 
-HG-CoLoR: seedsMerging.o seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) main.o
+HG-CoLoR: seedsMerging.o seedsLinking.o reverseComplement.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) main.o
 	$(CC) -o bin/HG-CoLoR src/reverseComplement.o src/seedsMerging.o src/seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) src/main.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
 
 reverseComplement.o: src/reverseComplement.cpp
