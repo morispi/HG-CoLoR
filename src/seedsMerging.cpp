@@ -115,7 +115,7 @@ int getLongReadLength(string tpl) {
 	return stoi(tpl.substr(i), NULL);
 }
 
-vector<seed_t> readAlignmentFile(string alFile) {
+vector<seed_t> readAlignmentFile(string alFile, unsigned minAlSize) {
 	int posT;
 	int rlen;
 	int tlen = -1;
@@ -157,22 +157,26 @@ vector<seed_t> readAlignmentFile(string alFile) {
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
 		getline(iss, token, '\t');
-		seeds.push_back({posT, rlen, tlen, score, seq, 1});
+		if (seq.length() >= minAlSize) {
+			seeds.push_back({posT, rlen, tlen, score, seq, 1});
+		}
 	}
 	f.close();
 	
 	return seeds;
 }
 
-vector<seed_t> processSeeds(string alFile, unsigned maxDistance, unsigned minOverlap) {
-	vector<seed_t> seeds = readAlignmentFile(alFile);
+vector<seed_t> processSeeds(string alFile, unsigned maxDistance, unsigned minOverlap, unsigned minAlSize) {
+	vector<seed_t> seeds = readAlignmentFile(alFile, minAlSize);
   
-	// Sort the seeds according to their mapping positions
-	sort(seeds.begin(), seeds.end());
-	
-	// Merge the seeds
-	mergeOverlappingPosSeeds(seeds, minOverlap);
-	mergeOverlappingSeqSeeds(seeds, maxDistance, minOverlap);
+  	if (!seeds.empty()) {
+		// Sort the seeds according to their mapping positions
+		sort(seeds.begin(), seeds.end());
+		
+		// Merge the seeds
+		mergeOverlappingPosSeeds(seeds, minOverlap);
+		mergeOverlappingSeqSeeds(seeds, maxDistance, minOverlap);
+	}
 
 	return seeds;
 } 

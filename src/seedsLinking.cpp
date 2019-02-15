@@ -4,8 +4,9 @@
 #include <chrono>
 #include <mutex>
 #include <future>
+#include <unordered_map>
 
-namespace CLRgen {
+// namespace CLRgen {
     PgSAIndexStandard* pgsaIndex;
     unsigned maxOrder;
     unsigned minOrder;
@@ -17,6 +18,7 @@ namespace CLRgen {
     string tmpDir;
     unsigned maxSeedsSkips;
     unsigned misMatches;
+    std::unordered_map<std::string, std::vector<bool>> readIndex;
 
     typedef DefaultPgSAIndex<uint_reads_cnt_std, unsigned int
         , uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std,
@@ -44,6 +46,56 @@ namespace CLRgen {
                 }
         }
         return res;
+	}
+
+	std::vector<bool> fullstr2num(const string& str){
+	  std::vector<bool> res;
+	  for(uint i(0);i<str.size();i++){
+	    switch (str[i]){
+	      case 'A':res.push_back(false);res.push_back(false);break;
+	      case 'C':res.push_back(false);res.push_back(true);break;
+	      case 'G':res.push_back(true);res.push_back(false);break;
+	      default:res.push_back(true);res.push_back(true);break;
+	    }
+	  }
+	  return res;
+	}
+
+	std::string fullnum2str(vector<bool> num){
+	  string str(num.size()/2, 'N');
+	  uint j = 0;
+	  for(uint i(0);i<num.size();i+=2){
+	    if(num[i]){
+	      if(num[i+1]){
+	      	str[j] = 'T';
+	      }else{
+	        str[j] = 'G';
+	      }
+	    }else{
+	      if(num[i+1]){
+	        str[j] = 'C';
+	      }else{
+	        str[j] = 'A';
+	      }
+	    }
+	    j++;
+	  }
+	  return str;
+	}
+
+	void indexReads(std::unordered_map<std::string, std::vector<bool>>& index, std::string readsFile) {
+		std::cerr << "reads file name : " << readsFile << std::endl;
+		std::ifstream f(readsFile);
+		std::string header, sequence;
+
+		getline(f, header);
+		while (header.length() > 0) {
+			header.erase(0, 1);
+			getline(f, sequence);
+			std::transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
+			index[header] = fullstr2num(sequence);
+			getline(f, header);
+		}
 	}
 	
 	string getRawRead(string readId) {
@@ -295,9 +347,12 @@ namespace CLRgen {
 			nbRawBases = 0;
 			
 			// Merge the overlapping seeds of the current long read
-			seeds = processSeeds(tmpDir + "/Alignments/" + LRId, seedsDistance, seedsOverlap);
+			seeds = processSeeds(tmpDir + "/Alignments/" + LRId, seedsDistance, seedsOverlap, maxOrder);
 			// Get the raw sequence of the current long read
-			rawSeq = getRawRead(tmpDir + "/RawLongReads/" + LRId);
+			// rawSeq = getRawRead(tmpDir + "/RawLongReads/" + LRId);
+			rawSeq = fullnum2str(readIndex[LRId]);
+			std::cerr << "id : " << LRId << std::endl;
+			std::cerr << rawSeq << std::endl;
 			
 			if (seeds.size() > 0) {
 				if (seedsSkips > (seeds.size() - 1) - idSeed - 1) {
@@ -455,7 +510,7 @@ namespace CLRgen {
 			return std::make_pair(LRId, "");
 	}
 		
-	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads) {
+	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads, string longReadsFile) {
 		// Global variables
 		pgsaIndex = index;
 		minOrder = minorder;
@@ -466,36 +521,15 @@ namespace CLRgen {
 		maxSeedsSkips = maxseedsskips;
 		misMatches = mismatches;
 		tmpDir = tmpdir;
+
+
 		
 		// KMC database, for counting K-mers
 		openDatabase(tmpDir + "/mers.db");
-		
-		// Prepare threads data
-		// vector<vector<string>> seeds;
-		// for (unsigned i = 0 ; i < nbThreads ; i++) {
-		// 	seeds.push_back(vector<string>());
-		// }
+
+		indexReads(readIndex, longReadsFile);
+
 		ifstream f(tmpDir + "/seeds");
-		// string line;
-		// unsigned curT = 0;
-		// while(getline(f, line)) {
-		// 	seeds[curT % nbThreads].push_back(line);
-		// 	curT++;
-		// }
-		
-		// // Launch threads
-		// vector<future<void>> threads;
-		// for (unsigned i = 0 ; i < nbThreads ; i++) {
-		// 	vector<string> tmpv = seeds[i];
-		// 	threads.push_back(async(launch::async, [tmpv]() mutable {
-		// 		generateCLRs(tmpv);
-		// 	}));
-		// }
-		
-		// // Get threads results
-		// for (future<void> &t: threads) {
-		// 	t.get();
-		// }
 
 		int poolSize = 1000;
 		ctpl::thread_pool myPool(nbThreads);
@@ -568,4 +602,4 @@ namespace CLRgen {
 		  
 		closeDatabase();
 	}
-}
+// }

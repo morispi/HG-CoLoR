@@ -9,7 +9,7 @@
 using namespace PgSAReadsSet;
 using namespace PgSAIndex;
 
-namespace CLRgen {
+// namespace CLRgen {
 	/**
      * Returns the neighbours of the k-mer kMer in the de Bruijn graph of order k.
      * left: set to 1 to get the neighbours on the left of the k-mer,
@@ -64,7 +64,7 @@ namespace CLRgen {
 	 * mismatches: mismatch threshold tolerance
 	 * nbThreads: number of threads to use
 	 */ 
-    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads);
-}
+    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads, string longReadsFile);
+// }
 
 #endif	/* SEEDSLNK_H */

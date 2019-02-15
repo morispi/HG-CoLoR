@@ -16,11 +16,11 @@ KMC_QUERY_OBJS = \
 $(KMC_QUERY_DIR)/nc_utils.o \
 $(KMC_QUERY_DIR)/kmc_query.o
 
-EXECS=CLRgen
+EXECS=HG-CoLoR
 all: $(EXECS)
 
-CLRgen: seedsMerging.o seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) CLRgen.o
-	$(CC) -o bin/CLRgen src/seedsMerging.o src/seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) src/CLRgen.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
+HG-CoLoR: seedsMerging.o seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) main.o
+	$(CC) -o bin/HG-CoLoR src/seedsMerging.o src/seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) src/main.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
 
 seedsMerging.o: src/seedsMerging.cpp
 	$(CC) -o src/seedsMerging.o -c src/seedsMerging.cpp $(CFLAGS)
@@ -31,8 +31,8 @@ seedsLinking.o: src/seedsLinking.cpp src/seedsMerging.h src/seedsLinking.h
 $(KMC_QUERY_OBJS): %.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-CLRgen.o: src/CLRgen.cpp src/seedsLinking.h
-	$(CC) -o src/CLRgen.o -c src/CLRgen.cpp $(CFLAGS) $(LDFLAGS) -I$(PGSA_SRC)
+main.o: src/main.cpp src/seedsLinking.h
+	$(CC) -o src/main.o -c src/main.cpp $(CFLAGS) $(LDFLAGS) -I$(PGSA_SRC)
 
 clean:
-	rm -Rf src/*.o src/kmc_query/*.o bin/CLRgen
+	rm -Rf src/*.o src/kmc_query/*.o bin/HG-CoLoR

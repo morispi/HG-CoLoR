@@ -72,14 +72,15 @@ int getLongReadLength(string LR);
 /**
  * Reads the alignments stored in the file alFile, and
  * returns a vector containing the corresponding seeds.
+ * Only considers alignment at least minAlSize bp long.
  */
-vector<seed_t> readAlignmentFile(string alFile);
+vector<seed_t> readAlignmentFile(string alFile, unsigned minAlSize);
 
 /**
  * Reads the alignments stored in the file alFile, and returns a vector
  * of the seeds, after the two merging steps, allowing a minimum overlap
  * of length minOverlap, and a maximum distance of maxDistance between
- * two consecutive seeds.
+ * two consecutive seeds. Only considers alignments at least minAlSize bp long.
  */
-vector<seed_t> processSeeds(string alFile, unsigned maxDistance, unsigned minOverlap);
+vector<seed_t> processSeeds(string alFile, unsigned maxDistance, unsigned minOverlap, unsigned minAlSize);
 
