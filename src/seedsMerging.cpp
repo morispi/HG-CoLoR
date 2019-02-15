@@ -115,68 +115,68 @@ int getLongReadLength(string tpl) {
 	return stoi(tpl.substr(i), NULL);
 }
 
-vector<seed_t> readAlignmentFile(string alFile, unsigned minAlSize) {
-	int posT;
-	int rlen;
-	int tlen = -1;
-	int score;
-	string seq;
-	string line;
-	vector<seed_t> seeds;
-	string token;
+// vector<seed_t> readAlignmentFile(string alFile, unsigned minAlSize) {
+// 	int posT;
+// 	int rlen;
+// 	int tlen = -1;
+// 	int score;
+// 	string seq;
+// 	string line;
+// 	vector<seed_t> seeds;
+// 	string token;
 	
-	ifstream f(alFile);
-	while(getline(f, line)) {
-		istringstream iss(line);
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		if (tlen == -1) {
-			tlen = getLongReadLength(token);
-		}
-		getline(iss, token, '\t');
-		posT = stoi(token, NULL);
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		seq = token;
-		rlen = token.length();
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		score = stoi(token.substr(5), NULL);
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		getline(iss, token, '\t');
-		if (seq.length() >= minAlSize) {
-			seeds.push_back({posT, rlen, tlen, score, seq, 1});
-		}
-	}
-	f.close();
+// 	ifstream f(alFile);
+// 	while(getline(f, line)) {
+// 		istringstream iss(line);
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		if (tlen == -1) {
+// 			tlen = getLongReadLength(token);
+// 		}
+// 		getline(iss, token, '\t');
+// 		posT = stoi(token, NULL);
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		seq = token;
+// 		rlen = token.length();
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		score = stoi(token.substr(5), NULL);
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		getline(iss, token, '\t');
+// 		if (seq.length() >= minAlSize) {
+// 			seeds.push_back({posT, rlen, tlen, score, seq, 1});
+// 		}
+// 	}
+// 	f.close();
 	
-	return seeds;
-}
+// 	return seeds;
+// }
 
-vector<seed_t> processSeeds(string alFile, unsigned maxDistance, unsigned minOverlap, unsigned minAlSize) {
-	vector<seed_t> seeds = readAlignmentFile(alFile, minAlSize);
+vector<seed_t> processSeeds(vector<seed_t> seeds, unsigned maxDistance, unsigned minOverlap) {
+	// vector<seed_t> seeds = readAlignmentFile(alFile, minAlSize);
   
-  	if (!seeds.empty()) {
+  	// if (!seeds.empty()) {
 		// Sort the seeds according to their mapping positions
 		sort(seeds.begin(), seeds.end());
 		
 		// Merge the seeds
 		mergeOverlappingPosSeeds(seeds, minOverlap);
 		mergeOverlappingSeqSeeds(seeds, maxDistance, minOverlap);
-	}
+	// }
 
 	return seeds;
 } 

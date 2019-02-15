@@ -8,6 +8,12 @@
 using namespace std;
 
 /**
+ * Returns the length of the sequence of the long read of identifier LR.
+ * len: length of the identifier.
+ */
+int getLongReadLength(string LR);
+
+/**
  * Data structure used to sore informations about the alignment of a seed on a long read.
  * alen: alignment length
  * pos: alignment position
@@ -35,6 +41,53 @@ struct seed_t {
 	  } else {
 		  return false;
 	  }
+	}
+
+	seed_t() {
+
+	}
+
+	seed_t(string str) {
+		// int posT;
+		// int rlen;
+		tlen = -1;
+		// int score;
+		// string seq;
+		// string line;
+		// vector<seed_t> seeds;
+		string token;
+
+		istringstream iss(str);
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		if (tlen == -1) {
+			tlen = getLongReadLength(token);
+		}
+		getline(iss, token, '\t');
+		pos = stoi(token, NULL);
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		seq = token;
+		alen = token.length();
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		score = stoi(token.substr(5), NULL);
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		getline(iss, token, '\t');
+		nb = 1;
 	}
 };
 
@@ -64,23 +117,16 @@ void mergeOverlappingPosSeeds(vector<seed_t> &seeds, unsigned minOverlap);
 void mergeOverlappingSeqSeeds(vector<seed_t> &seeds, int maxDistance, int minOverlap);
 
 /**
- * Returns the length of the sequence of the long read of identifier LR.
- * len: length of the identifier.
- */
-int getLongReadLength(string LR);
-
-/**
  * Reads the alignments stored in the file alFile, and
  * returns a vector containing the corresponding seeds.
- * Only considers alignment at least minAlSize bp long.
  */
-vector<seed_t> readAlignmentFile(string alFile, unsigned minAlSize);
+vector<seed_t> readAlignmentFile(string alFile);
 
 /**
- * Reads the alignments stored in the file alFile, and returns a vector
+ * Processes the seeds vector, and returns a new vector
  * of the seeds, after the two merging steps, allowing a minimum overlap
  * of length minOverlap, and a maximum distance of maxDistance between
- * two consecutive seeds. Only considers alignments at least minAlSize bp long.
+ * two consecutive seeds.
  */
-vector<seed_t> processSeeds(string alFile, unsigned maxDistance, unsigned minOverlap, unsigned minAlSize);
+vector<seed_t> processSeeds(vector<seed_t> seeds, unsigned maxDistance, unsigned minOverlap);
 

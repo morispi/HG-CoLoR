@@ -5,6 +5,7 @@
 #include "test/testdata.h"
 #include "index/PgSAIndexFactory.h"
 #include "../CTPL/ctpl_stl.h"
+#include "seedsMerging.h"
 
 using namespace PgSAReadsSet;
 using namespace PgSAIndex;
@@ -46,9 +47,9 @@ using namespace PgSAIndex;
      int link(string srcSeed, string tgtSeed, unsigned curK, set<string> &visited, unsigned* curBranches, unsigned dist, string curExt, string &missingPart, unsigned LRLen);
     
     /**
-	 * Generates the corrected long read for the template long read..
+	 * Generates the corrected long read for tpl from the seeds vector.
 	 */ 
-    std::pair<string, string> correctRead(int id, std::string tpl);
+    std::pair<string, string> correctRead(int id, string tpl, vector<seed_t> seeds);
     
     /**
      * Launches the correction prodecure.
@@ -63,8 +64,10 @@ using namespace PgSAIndex;
 	 * maxseedsskips: maximum number of seeds that can be skipped
 	 * mismatches: mismatch threshold tolerance
 	 * nbThreads: number of threads to use
+	 * longReadsFile : file containing the raw long reads to correct
+	 * alignmentsFile : file containing the alignments of the SRs to the LRs
 	 */ 
-    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads, string longReadsFile);
+    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads, string longReadsFile, string alignmentsFile);
 // }
 
 #endif	/* SEEDSLNK_H */

@@ -1,5 +1,4 @@
 #include "seedsLinking.h"
-#include "seedsMerging.h"
 #include "kmc_query/kmc_query.h"
 #include <chrono>
 #include <mutex>
@@ -84,7 +83,6 @@
 	}
 
 	void indexReads(std::unordered_map<std::string, std::vector<bool>>& index, std::string readsFile) {
-		std::cerr << "reads file name : " << readsFile << std::endl;
 		std::ifstream f(readsFile);
 		std::string header, sequence;
 
@@ -96,6 +94,58 @@
 			index[header] = fullstr2num(sequence);
 			getline(f, header);
 		}
+	}
+
+	vector<string> splitString(string s, string delimiter) {
+	    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+	    string token;
+	    vector<string> res;
+
+	    while ((pos_end = s.find (delimiter, pos_start)) != string::npos) {
+	        token = s.substr (pos_start, pos_end - pos_start);
+	        pos_start = pos_end + delim_len;
+	        res.push_back (token);
+	    }
+
+	    res.push_back (s.substr (pos_start));
+	    return res;
+	}
+
+	std::pair<string, vector<seed_t>> getNextSeeds(std::ifstream& f, unsigned minLen) {
+		vector<seed_t> curSeeds;
+		seed_t seed;
+		std::string line, curRead, oldRead;
+
+		getline(f, line);
+		while(line.length() > 0 or !curSeeds.empty()) {
+			if (line.length() > 0) {
+				seed = seed_t(line);
+				if (line.length() > 0) {
+					curRead = splitString(line, "\t")[2];
+				} else {
+					curRead = "";
+				}
+			}
+			if (line.length() > 0 and (oldRead == "" or curRead == oldRead)) {
+				oldRead = curRead;
+				if (seed.alen >= minLen) {
+					curSeeds.push_back(seed);
+				}
+				getline(f, line);
+				if (line.length() > 0) {
+					curRead = splitString(line, "\t")[2];
+				} else {
+					curRead = "";
+				}
+			} else {
+				if (!f.eof()) {
+					f.seekg(-line.length()-1, f.cur);
+				}
+				return std::make_pair(oldRead, curSeeds);
+			}
+		}
+
+		return std::make_pair(oldRead, curSeeds);
 	}
 	
 	string getRawRead(string readId) {
@@ -314,14 +364,14 @@
 		}
 	}
 
-    std::pair<string, string> correctRead(int id, string tpl) {
+    std::pair<string, string> correctRead(int id, string tpl, vector<seed_t> seeds) {
 		unsigned skippedSeeds, posBeg, posSrc, posTgt, dist,
 				 curBranches, LRLen, idSeed, seedsSkips, idTmp, tmpSkips,
 				 isLinkable, curLink = 0;
 		int firstSkippedSeed, linked, nbSeedsBases, nbGraphBases, nbRawBases, nextReachable, posEnd;
 		string LRId, src, tgt, rawSeq, rawPart, correctedLR, tmpSeed, missingPart, tmpMissingPart;
 		set<string> visited;
-		vector<seed_t> seeds;
+		// vector<seed_t> seeds;
 		seed_t curSeed;
 		
 		// Iterate through the long reads
@@ -347,13 +397,11 @@
 			nbRawBases = 0;
 			
 			// Merge the overlapping seeds of the current long read
-			seeds = processSeeds(tmpDir + "/Alignments/" + LRId, seedsDistance, seedsOverlap, maxOrder);
+			seeds = processSeeds(seeds, seedsDistance, seedsOverlap);
 			// Get the raw sequence of the current long read
 			// rawSeq = getRawRead(tmpDir + "/RawLongReads/" + LRId);
 			rawSeq = fullnum2str(readIndex[LRId]);
-			std::cerr << "id : " << LRId << std::endl;
-			std::cerr << rawSeq << std::endl;
-			
+			std::transform(rawSeq.begin(), rawSeq.end(), rawSeq.begin(), ::tolower);
 			if (seeds.size() > 0) {
 				if (seedsSkips > (seeds.size() - 1) - idSeed - 1) {
 					seedsSkips = (seeds.size() - 1) - idSeed - 1;
@@ -503,14 +551,12 @@
 					fRes << LRId << "_" << nbSeedsBases << "_" << nbGraphBases << "_" << nbRawBases;
 					return std::make_pair(fRes.str(), correctedLR);
 				}
-				
 				return std::make_pair(LRId, "");
 			}
-
 			return std::make_pair(LRId, "");
 	}
 		
-	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads, string longReadsFile) {
+	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads, string longReadsFile, string alignmentsFile) {
 		// Global variables
 		pgsaIndex = index;
 		minOrder = minorder;
@@ -529,36 +575,36 @@
 
 		indexReads(readIndex, longReadsFile);
 
-		ifstream f(tmpDir + "/seeds");
+		ifstream alignments(alignmentsFile);
 
-		int poolSize = 1000;
+		int poolSize = 1;
 		ctpl::thread_pool myPool(nbThreads);
 		int jobsToProcess = 100000000;
 		int jobsLoaded = 0;
 		int jobsCompleted = 0;
 
+		vector<seed_t> curSeeds;
 		string curTpl;
+		std::pair<string, vector<seed_t>> curPair;
 
 		// Load the first jobs
 		vector<std::future<std::pair<std::string, std::string>>> results(poolSize);
-		getline(f, curTpl);
-	    while (jobsLoaded < poolSize && !curTpl.empty() && jobsLoaded < jobsToProcess) {
-	        // curTpl.clear();
-	        // curTpl.push_back(line);
-	        // while (curReadAlignments.size() == 0 and !curTpl.empty()) {
-	        // 	getline(templates, curTpl);
-	        // 	curReadAlignments = getReadPile(alignments, curTpl);
-	        // }
-	        // results[jobsLoaded] = myPool.push(processRead, curReadAlignments, minSupport, maxSupport, windowSize, merSize, commonKMers, minAnchors, solidThresh, windowOverlap, maxMSA, path);
-	        results[jobsLoaded] = myPool.push(correctRead, curTpl);
+
+	    while (jobsLoaded < poolSize && !alignments.eof() && jobsLoaded < jobsToProcess) {
+	    	curPair = getNextSeeds(alignments, maxOrder);
+	    	while (curPair.second.empty() and !alignments.eof()) {
+	    		curPair = getNextSeeds(alignments, maxOrder);
+	    	}
+	    	curTpl = curPair.first;
+	    	curSeeds = curPair.second;
+	        results[jobsLoaded] = myPool.push(correctRead, curTpl, curSeeds);
 	        jobsLoaded++;
-	        getline(f, curTpl);
 		}
 
 		// Load the remaining jobs as other jobs terminate
 		int curJob = 0;
 	    std::pair<std::string, std::string> curRes;
-	    while(!curTpl.empty() && jobsLoaded < jobsToProcess) {
+	    while(!alignments.eof() && jobsLoaded < jobsToProcess) {
 	    	// Get the job results
 	        curRes = results[curJob].get();
 	        if (curRes.second.length() != 0) {
@@ -566,14 +612,13 @@
 		    }
 	        jobsCompleted++;
 	        
-	        // Load the next job
-	        // curReadAlignments = getReadPile(alignments, curTpl);
-	        // while (curReadAlignments.size() == 0 and !curTpl.empty()) {
-	        // 	getline(templates, curTpl);
-	        // 	curReadAlignments = getReadPile(alignments, curTpl);
-	        // }
-	        // results[curJob] = myPool.push(processRead, curReadAlignments, minSupport, maxSupport, windowSize, merSize, commonKMers, minAnchors, solidThresh, windowOverlap, maxMSA, path);
-	        results[curJob] = myPool.push(correctRead, curTpl);
+	        curPair = getNextSeeds(alignments, maxOrder);
+	    	while (curPair.second.empty() and !alignments.eof()) {
+	    		curPair = getNextSeeds(alignments, maxOrder);
+	    	}
+	    	curTpl = curPair.first;
+	    	curSeeds = curPair.second;
+	        results[curJob] = myPool.push(correctRead, curTpl, curSeeds);
 	        jobsLoaded++;
 	        
 	        // Increment the current job nb, and loop if needed
@@ -581,7 +626,6 @@
 	        if(curJob == poolSize) {
 	            curJob = 0;
 	        }
-	        getline(f, curTpl);
 		}
 
 		// Wait for the remaining jobs to terminate
