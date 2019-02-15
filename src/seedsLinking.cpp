@@ -81,34 +81,25 @@ namespace CLRgen {
 		vector<StandardOccurrence>::iterator it;
 		it = qRes.begin();
 		
-		while (it != qRes.end()) {
+		while (it != qRes.end() and neighbours.size() < 4) {
 			read = it->first;
 			pos = it->second;
 			if (left == 0 && pos + f.length() < maxOrder) {
-				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos));
+				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos, f.length() + 1));
 			} else if (left == 1 && pos - 1 >= 0) {
-				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(0, pos + f.length()));
+				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos - 1, f.length() + 1));
 			}
 			it++;
 		}
 		
 		vector<string> fres;
-		set<string>::iterator n, i;
-		n = neighbours.begin();
-		i = neighbours.begin();
-		while (n != neighbours.end()) {
-			i++;
-			while (i != neighbours.end() && i->find(*n) != std::string::npos) {
-				n++;
-				i++;
-			}
-			fres.push_back(*n);
-			n++;
+		for (std::string s : neighbours) {
+			fres.push_back(s);
 		}
 		
 		return fres;
 	}
-    
+	
     unsigned extendLeft(unsigned extLen, string &LR) {
 		vector<string> neighbours;
 		vector<string>::iterator it;
@@ -271,7 +262,7 @@ namespace CLRgen {
 		}
 	}
 
-    void generateCLRs(vector<string>& longReads) {
+    std::pair<string, string> correctRead(int id, string tpl) {
 		unsigned skippedSeeds, posBeg, posSrc, posTgt, dist,
 				 curBranches, LRLen, idSeed, seedsSkips, idTmp, tmpSkips,
 				 isLinkable, curLink = 0;
@@ -282,8 +273,9 @@ namespace CLRgen {
 		seed_t curSeed;
 		
 		// Iterate through the long reads
-		while (curLink < longReads.size()) {
-			LRId = longReads[curLink];
+		// while (curLink < longReads.size()) {
+			// LRId = longReads[curLink];
+			LRId = tpl;
 			skippedSeeds = 0;
 			firstSkippedSeed = -1;
 			idSeed = 0;
@@ -453,16 +445,14 @@ namespace CLRgen {
 						nbRawBases = nbRawBases + LRLen - posEnd - 1;
 					}
 					
-					fRes << ">" << LRId << "_" << nbSeedsBases << "_" << nbGraphBases << "_" << nbRawBases << endl << correctedLR << endl;
+					fRes << ">" << LRId << "_" << nbSeedsBases << "_" << nbGraphBases << "_" << nbRawBases;
+					return std::make_pair(fRes.str(), correctedLR);
 				}
 				
-				outMtx.lock();
-				cout << fRes.str();
-				outMtx.unlock();
+				return std::make_pair(LRId, "");
 			}
-			
-			curLink++;
-		}
+
+			return std::make_pair(LRId, "");
 	}
 		
 	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads) {
@@ -481,30 +471,99 @@ namespace CLRgen {
 		openDatabase(tmpDir + "/mers.db");
 		
 		// Prepare threads data
-		vector<vector<string>> seeds;
-		for (unsigned i = 0 ; i < nbThreads ; i++) {
-			seeds.push_back(vector<string>());
-		}
+		// vector<vector<string>> seeds;
+		// for (unsigned i = 0 ; i < nbThreads ; i++) {
+		// 	seeds.push_back(vector<string>());
+		// }
 		ifstream f(tmpDir + "/seeds");
-		string line;
-		unsigned curT = 0;
-		while(getline(f, line)) {
-			seeds[curT % nbThreads].push_back(line);
-			curT++;
-		}
+		// string line;
+		// unsigned curT = 0;
+		// while(getline(f, line)) {
+		// 	seeds[curT % nbThreads].push_back(line);
+		// 	curT++;
+		// }
 		
-		// Launch threads
-		vector<future<void>> threads;
-		for (unsigned i = 0 ; i < nbThreads ; i++) {
-			vector<string> tmpv = seeds[i];
-			threads.push_back(async(launch::async, [tmpv]() mutable {
-				generateCLRs(tmpv);
-			}));
-		}
+		// // Launch threads
+		// vector<future<void>> threads;
+		// for (unsigned i = 0 ; i < nbThreads ; i++) {
+		// 	vector<string> tmpv = seeds[i];
+		// 	threads.push_back(async(launch::async, [tmpv]() mutable {
+		// 		generateCLRs(tmpv);
+		// 	}));
+		// }
 		
-		// Get threads results
-		for (future<void> &t: threads) {
-			t.get();
+		// // Get threads results
+		// for (future<void> &t: threads) {
+		// 	t.get();
+		// }
+
+		int poolSize = 1000;
+		ctpl::thread_pool myPool(nbThreads);
+		int jobsToProcess = 100000000;
+		int jobsLoaded = 0;
+		int jobsCompleted = 0;
+
+		string curTpl;
+
+		// Load the first jobs
+		vector<std::future<std::pair<std::string, std::string>>> results(poolSize);
+		getline(f, curTpl);
+	    while (jobsLoaded < poolSize && !curTpl.empty() && jobsLoaded < jobsToProcess) {
+	        // curTpl.clear();
+	        // curTpl.push_back(line);
+	        // while (curReadAlignments.size() == 0 and !curTpl.empty()) {
+	        // 	getline(templates, curTpl);
+	        // 	curReadAlignments = getReadPile(alignments, curTpl);
+	        // }
+	        // results[jobsLoaded] = myPool.push(processRead, curReadAlignments, minSupport, maxSupport, windowSize, merSize, commonKMers, minAnchors, solidThresh, windowOverlap, maxMSA, path);
+	        results[jobsLoaded] = myPool.push(correctRead, curTpl);
+	        jobsLoaded++;
+	        getline(f, curTpl);
+		}
+
+		// Load the remaining jobs as other jobs terminate
+		int curJob = 0;
+	    std::pair<std::string, std::string> curRes;
+	    while(!curTpl.empty() && jobsLoaded < jobsToProcess) {
+	    	// Get the job results
+	        curRes = results[curJob].get();
+	        if (curRes.second.length() != 0) {
+		        std::cout << ">" << curRes.first << std::endl << curRes.second << std::endl;
+		    }
+	        jobsCompleted++;
+	        
+	        // Load the next job
+	        // curReadAlignments = getReadPile(alignments, curTpl);
+	        // while (curReadAlignments.size() == 0 and !curTpl.empty()) {
+	        // 	getline(templates, curTpl);
+	        // 	curReadAlignments = getReadPile(alignments, curTpl);
+	        // }
+	        // results[curJob] = myPool.push(processRead, curReadAlignments, minSupport, maxSupport, windowSize, merSize, commonKMers, minAnchors, solidThresh, windowOverlap, maxMSA, path);
+	        results[curJob] = myPool.push(correctRead, curTpl);
+	        jobsLoaded++;
+	        
+	        // Increment the current job nb, and loop if needed
+	        curJob++;
+	        if(curJob == poolSize) {
+	            curJob = 0;
+	        }
+	        getline(f, curTpl);
+		}
+
+		// Wait for the remaining jobs to terminate
+		while(jobsCompleted < jobsLoaded) {
+	        // Get the job results
+	        curRes = results[curJob].get();
+	        if (curRes.second.length() != 0) {
+		        std::cout << ">" << curRes.first << std::endl << curRes.second << std::endl;
+		    }
+	        jobsCompleted++;
+	        
+	        // Increment the current job nb, and loop if needed
+	        curJob++;
+	        if(curJob == poolSize) {
+	            curJob = 0;
+	        }
 		}
 		  
 		closeDatabase();

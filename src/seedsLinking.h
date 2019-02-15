@@ -4,6 +4,7 @@
 #include <iostream>
 #include "test/testdata.h"
 #include "index/PgSAIndexFactory.h"
+#include "../CTPL/ctpl_stl.h"
 
 using namespace PgSAReadsSet;
 using namespace PgSAIndex;
@@ -45,9 +46,9 @@ namespace CLRgen {
      int link(string srcSeed, string tgtSeed, unsigned curK, set<string> &visited, unsigned* curBranches, unsigned dist, string curExt, string &missingPart, unsigned LRLen);
     
     /**
-	 * Generates the corrected long reads for the long reads contained in the vector longReads.
+	 * Generates the corrected long read for the template long read..
 	 */ 
-    void generateCLRs(vector<string>& longReads);
+    std::pair<string, string> correctRead(int id, std::string tpl);
     
     /**
      * Launches the correction prodecure.
