@@ -577,7 +577,7 @@
 
 		ifstream alignments(alignmentsFile);
 
-		int poolSize = 1;
+		int poolSize = 1000;
 		ctpl::thread_pool myPool(nbThreads);
 		int jobsToProcess = 100000000;
 		int jobsLoaded = 0;
