@@ -4,13 +4,14 @@
 #include "helper.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/resource.h>
+
 
 PgSAIndexStandard* prepareIndex(string idxFile, string cacheFile) {
     return PgSAIndexFactory::getPgSAIndexStandard(idxFile, cacheFile, false);
 }
 
 int main(int argc, char *argv[]) {
-
     int opt; // current option
     int maxorder = 100;
     string cacheFile;
