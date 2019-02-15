@@ -445,7 +445,7 @@ namespace CLRgen {
 						nbRawBases = nbRawBases + LRLen - posEnd - 1;
 					}
 					
-					fRes << ">" << LRId << "_" << nbSeedsBases << "_" << nbGraphBases << "_" << nbRawBases;
+					fRes << LRId << "_" << nbSeedsBases << "_" << nbGraphBases << "_" << nbRawBases;
 					return std::make_pair(fRes.str(), correctedLR);
 				}
 				
