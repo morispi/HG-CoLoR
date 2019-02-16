@@ -1,11 +1,12 @@
 #include "seedsLinking.h"
-#include "seedsMerging.h"
 #include "kmc_query/kmc_query.h"
+#include "reverseComplement.h"
 #include <chrono>
 #include <mutex>
 #include <future>
+#include <unordered_map>
 
-namespace CLRgen {
+// namespace CLRgen {
     PgSAIndexStandard* pgsaIndex;
     unsigned maxOrder;
     unsigned minOrder;
@@ -17,33 +18,111 @@ namespace CLRgen {
     string tmpDir;
     unsigned maxSeedsSkips;
     unsigned misMatches;
+    std::unordered_map<std::string, std::vector<bool>> readIndex;
 
     typedef DefaultPgSAIndex<uint_reads_cnt_std, unsigned int
         , uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std,
             DefaultSuffixArrayOfConstantLengthTypeTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std, 4>::Type> PgSAIndexStandardImpl;
-            
-    string revComp(string seq, int len) {
-        string res = string(seq);
-        for (int i = 0; i < len; i++) {
-                switch(seq[i]) {
-                        case 'A':
-                                res[len-i-1] = 'T';
-                                break;
-                        case 'C':
-                                res[len-i-1] = 'G';
-                                break;
-                        case 'G':
-                                res[len-i-1] = 'C';
-                                break;
-                        case 'T':
-                                res[len-i-1] = 'A';
-                                break;
-                        default:
-                                res[len-i-1] = 'N';
-                                break;
-                }
-        }
-        return res;
+
+	std::vector<bool> fullstr2num(const string& str){
+	  std::vector<bool> res;
+	  for(uint i(0);i<str.size();i++){
+	    switch (str[i]){
+	      case 'A':res.push_back(false);res.push_back(false);break;
+	      case 'C':res.push_back(false);res.push_back(true);break;
+	      case 'G':res.push_back(true);res.push_back(false);break;
+	      default:res.push_back(true);res.push_back(true);break;
+	    }
+	  }
+	  return res;
+	}
+
+	std::string fullnum2str(vector<bool> num){
+	  string str(num.size()/2, 'N');
+	  uint j = 0;
+	  for(uint i(0);i<num.size();i+=2){
+	    if(num[i]){
+	      if(num[i+1]){
+	      	str[j] = 'T';
+	      }else{
+	        str[j] = 'G';
+	      }
+	    }else{
+	      if(num[i+1]){
+	        str[j] = 'C';
+	      }else{
+	        str[j] = 'A';
+	      }
+	    }
+	    j++;
+	  }
+	  return str;
+	}
+
+	void indexReads(std::unordered_map<std::string, std::vector<bool>>& index, std::string readsFile) {
+		std::ifstream f(readsFile);
+		std::string header, sequence;
+
+		getline(f, header);
+		while (header.length() > 0) {
+			header.erase(0, 1);
+			getline(f, sequence);
+			std::transform(sequence.begin(), sequence.end(), sequence.begin(), ::toupper);
+			index[header] = fullstr2num(sequence);
+			getline(f, header);
+		}
+	}
+
+	vector<string> splitString(string s, string delimiter) {
+	    size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+	    string token;
+	    vector<string> res;
+
+	    while ((pos_end = s.find (delimiter, pos_start)) != string::npos) {
+	        token = s.substr (pos_start, pos_end - pos_start);
+	        pos_start = pos_end + delim_len;
+	        res.push_back (token);
+	    }
+
+	    res.push_back (s.substr (pos_start));
+	    return res;
+	}
+
+	std::pair<string, vector<seed_t>> getNextSeeds(std::ifstream& f, unsigned minLen) {
+		vector<seed_t> curSeeds;
+		seed_t seed;
+		std::string line, curRead, oldRead;
+
+		getline(f, line);
+		while(line.length() > 0 or !curSeeds.empty()) {
+			if (line.length() > 0) {
+				seed = seed_t(line);
+				if (line.length() > 0) {
+					curRead = splitString(line, "\t")[2];
+				} else {
+					curRead = "";
+				}
+			}
+			if (line.length() > 0 and (oldRead == "" or curRead == oldRead)) {
+				oldRead = curRead;
+				if (seed.alen >= minLen) {
+					curSeeds.push_back(seed);
+				}
+				getline(f, line);
+				if (line.length() > 0) {
+					curRead = splitString(line, "\t")[2];
+				} else {
+					curRead = "";
+				}
+			} else {
+				if (!f.eof()) {
+					f.seekg(-line.length()-1, f.cur);
+				}
+				return std::make_pair(oldRead, curSeeds);
+			}
+		}
+
+		return std::make_pair(oldRead, curSeeds);
 	}
 	
 	string getRawRead(string readId) {
@@ -81,34 +160,25 @@ namespace CLRgen {
 		vector<StandardOccurrence>::iterator it;
 		it = qRes.begin();
 		
-		while (it != qRes.end()) {
+		while (it != qRes.end() and neighbours.size() < 4) {
 			read = it->first;
 			pos = it->second;
 			if (left == 0 && pos + f.length() < maxOrder) {
-				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos));
+				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos, f.length() + 1));
 			} else if (left == 1 && pos - 1 >= 0) {
-				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(0, pos + f.length()));
+				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos - 1, f.length() + 1));
 			}
 			it++;
 		}
 		
 		vector<string> fres;
-		set<string>::iterator n, i;
-		n = neighbours.begin();
-		i = neighbours.begin();
-		while (n != neighbours.end()) {
-			i++;
-			while (i != neighbours.end() && i->find(*n) != std::string::npos) {
-				n++;
-				i++;
-			}
-			fres.push_back(*n);
-			n++;
+		for (std::string s : neighbours) {
+			fres.push_back(s);
 		}
 		
 		return fres;
 	}
-    
+	
     unsigned extendLeft(unsigned extLen, string &LR) {
 		vector<string> neighbours;
 		vector<string>::iterator it;
@@ -271,19 +341,20 @@ namespace CLRgen {
 		}
 	}
 
-    void generateCLRs(vector<string>& longReads) {
+    std::pair<string, string> correctRead(int id, string tpl, vector<seed_t> seeds) {
 		unsigned skippedSeeds, posBeg, posSrc, posTgt, dist,
 				 curBranches, LRLen, idSeed, seedsSkips, idTmp, tmpSkips,
 				 isLinkable, curLink = 0;
 		int firstSkippedSeed, linked, nbSeedsBases, nbGraphBases, nbRawBases, nextReachable, posEnd;
 		string LRId, src, tgt, rawSeq, rawPart, correctedLR, tmpSeed, missingPart, tmpMissingPart;
 		set<string> visited;
-		vector<seed_t> seeds;
+		// vector<seed_t> seeds;
 		seed_t curSeed;
 		
 		// Iterate through the long reads
-		while (curLink < longReads.size()) {
-			LRId = longReads[curLink];
+		// while (curLink < longReads.size()) {
+			// LRId = longReads[curLink];
+			LRId = tpl;
 			skippedSeeds = 0;
 			firstSkippedSeed = -1;
 			idSeed = 0;
@@ -303,10 +374,11 @@ namespace CLRgen {
 			nbRawBases = 0;
 			
 			// Merge the overlapping seeds of the current long read
-			seeds = processSeeds(tmpDir + "/Alignments/" + LRId, seedsDistance, seedsOverlap);
+			seeds = processSeeds(seeds, seedsDistance, seedsOverlap);
 			// Get the raw sequence of the current long read
-			rawSeq = getRawRead(tmpDir + "/RawLongReads/" + LRId);
-			
+			// rawSeq = getRawRead(tmpDir + "/RawLongReads/" + LRId);
+			rawSeq = fullnum2str(readIndex[LRId]);
+			std::transform(rawSeq.begin(), rawSeq.end(), rawSeq.begin(), ::tolower);
 			if (seeds.size() > 0) {
 				if (seedsSkips > (seeds.size() - 1) - idSeed - 1) {
 					seedsSkips = (seeds.size() - 1) - idSeed - 1;
@@ -336,8 +408,8 @@ namespace CLRgen {
 						visited.clear();
 						curBranches = 0;
 						missingPart = string();
-						linked = link(revComp(tgt, tgt.size()), revComp(src, src.size()), maxOrder, visited, &curBranches, 0, revComp(tgt, tgt.size()), missingPart, 30.0 / 100.0 * 6.0 * (posTgt - posSrc - src.size()) + posTgt - posSrc - src.size() + maxOrder);
-						missingPart = revComp(missingPart, missingPart.size());
+						linked = link(rev_comp::run(tgt), rev_comp::run(src), maxOrder, visited, &curBranches, 0, rev_comp::run(tgt), missingPart, 30.0 / 100.0 * 6.0 * (posTgt - posSrc - src.size()) + posTgt - posSrc - src.size() + maxOrder);
+						missingPart = rev_comp::run(missingPart);
 					}
 					visited.clear();
 					idTmp = idSeed + 1;
@@ -355,8 +427,8 @@ namespace CLRgen {
 							visited.clear();
 							curBranches = 0;
 							tmpMissingPart = string();
-							isLinkable = link(revComp(tmpSeed, tmpSeed.size()), revComp(tgt, tgt.size()), maxOrder, visited, &curBranches, 0, revComp(tmpSeed, tmpSeed.size()), tmpMissingPart, 30.0 / 100.0 * 6.0 * (seeds[idTmp].pos - posTgt - tgt.size()) + seeds[idTmp].pos - posTgt - tgt.size() + maxOrder);
-							tmpMissingPart = revComp(tmpMissingPart, tmpMissingPart.size());
+							isLinkable = link(rev_comp::run(tmpSeed), rev_comp::run(tgt), maxOrder, visited, &curBranches, 0, rev_comp::run(tmpSeed), tmpMissingPart, 30.0 / 100.0 * 6.0 * (seeds[idTmp].pos - posTgt - tgt.size()) + seeds[idTmp].pos - posTgt - tgt.size() + maxOrder);
+							tmpMissingPart = rev_comp::run(tmpMissingPart);
 						}
 						visited.clear();
 						idTmp++;
@@ -453,19 +525,15 @@ namespace CLRgen {
 						nbRawBases = nbRawBases + LRLen - posEnd - 1;
 					}
 					
-					fRes << ">" << LRId << "_" << nbSeedsBases << "_" << nbGraphBases << "_" << nbRawBases << endl << correctedLR << endl;
+					fRes << LRId << "_" << nbSeedsBases << "_" << nbGraphBases << "_" << nbRawBases;
+					return std::make_pair(fRes.str(), correctedLR);
 				}
-				
-				outMtx.lock();
-				cout << fRes.str();
-				outMtx.unlock();
+				return std::make_pair(LRId, "");
 			}
-			
-			curLink++;
-		}
+			return std::make_pair(LRId, "");
 	}
 		
-	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads) {
+	void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads, string longReadsFile, string alignmentsFile) {
 		// Global variables
 		pgsaIndex = index;
 		minOrder = minorder;
@@ -476,37 +544,83 @@ namespace CLRgen {
 		maxSeedsSkips = maxseedsskips;
 		misMatches = mismatches;
 		tmpDir = tmpdir;
+
+
 		
 		// KMC database, for counting K-mers
 		openDatabase(tmpDir + "/mers.db");
-		
-		// Prepare threads data
-		vector<vector<string>> seeds;
-		for (unsigned i = 0 ; i < nbThreads ; i++) {
-			seeds.push_back(vector<string>());
+
+		indexReads(readIndex, longReadsFile);
+
+		ifstream alignments(alignmentsFile);
+
+		int poolSize = 1000;
+		ctpl::thread_pool myPool(nbThreads);
+		int jobsToProcess = 100000000;
+		int jobsLoaded = 0;
+		int jobsCompleted = 0;
+
+		vector<seed_t> curSeeds;
+		string curTpl;
+		std::pair<string, vector<seed_t>> curPair;
+
+		// Load the first jobs
+		vector<std::future<std::pair<std::string, std::string>>> results(poolSize);
+
+	    while (jobsLoaded < poolSize && !alignments.eof() && jobsLoaded < jobsToProcess) {
+	    	curPair = getNextSeeds(alignments, maxOrder);
+	    	while (curPair.second.empty() and !alignments.eof()) {
+	    		curPair = getNextSeeds(alignments, maxOrder);
+	    	}
+	    	curTpl = curPair.first;
+	    	curSeeds = curPair.second;
+	        results[jobsLoaded] = myPool.push(correctRead, curTpl, curSeeds);
+	        jobsLoaded++;
 		}
-		ifstream f(tmpDir + "/seeds");
-		string line;
-		unsigned curT = 0;
-		while(getline(f, line)) {
-			seeds[curT % nbThreads].push_back(line);
-			curT++;
+
+		// Load the remaining jobs as other jobs terminate
+		int curJob = 0;
+	    std::pair<std::string, std::string> curRes;
+	    while(!alignments.eof() && jobsLoaded < jobsToProcess) {
+	    	// Get the job results
+	        curRes = results[curJob].get();
+	        if (curRes.second.length() != 0) {
+		        std::cout << ">" << curRes.first << std::endl << curRes.second << std::endl;
+		    }
+	        jobsCompleted++;
+	        
+	        curPair = getNextSeeds(alignments, maxOrder);
+	    	while (curPair.second.empty() and !alignments.eof()) {
+	    		curPair = getNextSeeds(alignments, maxOrder);
+	    	}
+	    	curTpl = curPair.first;
+	    	curSeeds = curPair.second;
+	        results[curJob] = myPool.push(correctRead, curTpl, curSeeds);
+	        jobsLoaded++;
+	        
+	        // Increment the current job nb, and loop if needed
+	        curJob++;
+	        if(curJob == poolSize) {
+	            curJob = 0;
+	        }
 		}
-		
-		// Launch threads
-		vector<future<void>> threads;
-		for (unsigned i = 0 ; i < nbThreads ; i++) {
-			vector<string> tmpv = seeds[i];
-			threads.push_back(async(launch::async, [tmpv]() mutable {
-				generateCLRs(tmpv);
-			}));
-		}
-		
-		// Get threads results
-		for (future<void> &t: threads) {
-			t.get();
+
+		// Wait for the remaining jobs to terminate
+		while(jobsCompleted < jobsLoaded) {
+	        // Get the job results
+	        curRes = results[curJob].get();
+	        if (curRes.second.length() != 0) {
+		        std::cout << ">" << curRes.first << std::endl << curRes.second << std::endl;
+		    }
+	        jobsCompleted++;
+	        
+	        // Increment the current job nb, and loop if needed
+	        curJob++;
+	        if(curJob == poolSize) {
+	            curJob = 0;
+	        }
 		}
 		  
 		closeDatabase();
 	}
-}
+// }

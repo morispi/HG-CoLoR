@@ -187,16 +187,6 @@ fi
 tmpdir="$tmpdir/HGC_"$$
 mkdir -p $tmpdir
 
-#Create the subdirectory for alignments files, if it does not exist
-if [[ ! -d $tmpdir/Alignments ]] ; then
-	mkdir $tmpdir/Alignments
-fi
-
-#Create the subdirectory for raw long reads, if it does not exist
-if [[ ! -d $tmpdir/RawLongReads ]] ; then
-	mkdir $tmpdir/RawLongReads
-fi
-
 #Temporary files names
 aln="SR_on_LR.sam"
 seeds="seeds"
@@ -236,22 +226,15 @@ echo "----- PgSAgen -----" >> HG-CoLoR.stdout
 echo "----- PgSAgen -----" >> HG-CoLoR.stderr
 $hgf/PgSA/dist/pgsagen/GNU-Linux-x86/PgSAgen $tmpdir/"$K-mers.fa" $tmpdir/"$K-mers.fa" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 
-echo "["$(date)"] Preparing the raw long reads temporary files"
 $hgf/bin/formatLongReads.py "$longreads" > $tmpdir/"$formatLR"
-$hgf/bin/prepareRawLongReads.py $tmpdir/"$formatLR" $tmpdir/RawLongReads/
 
 echo "["$(date)"] Aligning the short reads on the long reads"
 echo "----- blasr -----" >> HG-CoLoR.stderr
-$hgf/bin/blasr $tmpdir/good_long_corrected_SR.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$K" --bestn "$bestn" > $tmpdir/"$aln" 2>> HG-CoLoR.stderr
-echo "["$(date)"] Preparing the alignments temporary files"
-sort -T $tmpdir/ -k 3 $tmpdir/"$aln" > $tmpdir/"tmp_$aln"
-mv $tmpdir/"tmp_$aln" $tmpdir/"$aln"
-$hgf/bin/filterOutShortAlignments.py $tmpdir/"$aln" "$K" $tmpdir/Alignments/
-rm $tmpdir/"$aln"
-ls $tmpdir/Alignments/ > $tmpdir/"$seeds"
+$hgf/bin/blasr $tmpdir/good_long_corrected_SR.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$K" --bestn "$bestn" | sort -T $tmpdir/ -k 3 --parallel="$nproc" > $tmpdir/"$aln" 2>> HG-CoLoR.stderr
 
 echo "["$(date)"] Generating the corrected long reads"
-$hgf/bin/CLRgen -t "$tmpdir" -K "$K" -d "$seedsdistance" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -m "$mismatches" -j "$nproc" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
+ulimit -s 65536
+$hgf/bin/HG-CoLoR -t "$tmpdir" -K "$K" -d "$seedsdistance" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -m "$mismatches" -j "$nproc" -r $tmpdir/"$formatLR" -a $tmpdir/"$aln" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
 $hgf/bin/trim.py "$out.fasta" > "$out.trim.fasta"
 $hgf/bin/split.py "$out.trim.fasta" > "$out.split.fasta"
 

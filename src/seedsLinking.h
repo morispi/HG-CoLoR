@@ -4,11 +4,13 @@
 #include <iostream>
 #include "test/testdata.h"
 #include "index/PgSAIndexFactory.h"
+#include "../CTPL/ctpl_stl.h"
+#include "seedsMerging.h"
 
 using namespace PgSAReadsSet;
 using namespace PgSAIndex;
 
-namespace CLRgen {
+// namespace CLRgen {
 	/**
      * Returns the neighbours of the k-mer kMer in the de Bruijn graph of order k.
      * left: set to 1 to get the neighbours on the left of the k-mer,
@@ -45,9 +47,9 @@ namespace CLRgen {
      int link(string srcSeed, string tgtSeed, unsigned curK, set<string> &visited, unsigned* curBranches, unsigned dist, string curExt, string &missingPart, unsigned LRLen);
     
     /**
-	 * Generates the corrected long reads for the long reads contained in the vector longReads.
+	 * Generates the corrected long read for tpl from the seeds vector.
 	 */ 
-    void generateCLRs(vector<string>& longReads);
+    std::pair<string, string> correctRead(int id, string tpl, vector<seed_t> seeds);
     
     /**
      * Launches the correction prodecure.
@@ -62,8 +64,10 @@ namespace CLRgen {
 	 * maxseedsskips: maximum number of seeds that can be skipped
 	 * mismatches: mismatch threshold tolerance
 	 * nbThreads: number of threads to use
+	 * longReadsFile : file containing the raw long reads to correct
+	 * alignmentsFile : file containing the alignments of the SRs to the LRs
 	 */ 
-    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads);
-}
+    void startCorrection(PgSAIndexStandard* index, unsigned maxorder, string tmpdir, unsigned seedsdistance, unsigned seedsoverlap, unsigned minorder, unsigned maxbranches, unsigned maxseedsskips, unsigned mismatches, unsigned nbThreads, string longReadsFile, string alignmentsFile);
+// }
 
 #endif	/* SEEDSLNK_H */
