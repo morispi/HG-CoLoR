@@ -233,6 +233,7 @@ echo "----- blasr -----" >> HG-CoLoR.stderr
 $hgf/bin/blasr $tmpdir/good_long_corrected_SR.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$K" --bestn "$bestn" | sort -T $tmpdir/ -k 3 --parallel="$nproc" > $tmpdir/"$aln" 2>> HG-CoLoR.stderr
 
 echo "["$(date)"] Generating the corrected long reads"
+ulimit -s 65536
 $hgf/bin/HG-CoLoR -t "$tmpdir" -K "$K" -d "$seedsdistance" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -m "$mismatches" -j "$nproc" -r $tmpdir/"$formatLR" -a $tmpdir/"$aln" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
 $hgf/bin/trim.py "$out.fasta" > "$out.trim.fasta"
 $hgf/bin/split.py "$out.trim.fasta" > "$out.split.fasta"
