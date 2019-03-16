@@ -160,20 +160,29 @@
 		vector<StandardOccurrence>::iterator it;
 		it = qRes.begin();
 		
-		while (it != qRes.end() and neighbours.size() < 4) {
+		while (it != qRes.end()) {
 			read = it->first;
 			pos = it->second;
 			if (left == 0 && pos + f.length() < maxOrder) {
-				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos, f.length() + 1));
+				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos));
 			} else if (left == 1 && pos - 1 >= 0) {
-				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(pos - 1, f.length() + 1));
+				neighbours.insert(pgsaIndex->getReadVirtual(read).substr(0, pos + f.length()));
 			}
 			it++;
 		}
 		
 		vector<string> fres;
-		for (std::string s : neighbours) {
-			fres.push_back(s);
+		set<string>::iterator n, i;
+		n = neighbours.begin();
+		i = neighbours.begin();
+		while (n != neighbours.end()) {
+			i++;
+			while (i != neighbours.end() && i->find(*n) != std::string::npos) {
+				n++;
+				i++;
+			}
+			fres.push_back(*n);
+			n++;
 		}
 		
 		return fres;
