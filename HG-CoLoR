@@ -203,7 +203,7 @@ echo "----- QuorUM -----" >> HG-CoLoR.stderr
 quorum --prefix $tmpdir/corrected_SR -q 33 -t "$nproc" "$shortreads" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 
 echo "["$(date)"] Removing short reads containing weak K-mers"
-$hgf/bin/filterShortReads.py $tmpdir/corrected_SR.fa "$K" > $tmpdir/long_corrected_SR.fa
+HGCfilterShortReads.py $tmpdir/corrected_SR.fa "$K" > $tmpdir/long_corrected_SR.fa
 echo "----- revseq -----" >> HG-CoLoR.stdout
 echo "----- revseq -----" >> HG-CoLoR.stderr
 revseq $tmpdir/long_corrected_SR.fa -reverse -complement -outseq $tmpdir/RC_long_corrected_SR.fa >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
@@ -224,19 +224,19 @@ kmc_dump -ci"$solid" $tmpdir/mers.db $tmpdir/"dumped_$K-mers" >> HG-CoLoR.stdout
 cut -f 1 $tmpdir/"dumped_$K-mers" > $tmpdir/"$K-mers.fa"
 echo "----- PgSAgen -----" >> HG-CoLoR.stdout
 echo "----- PgSAgen -----" >> HG-CoLoR.stderr
-$hgf/PgSA/dist/pgsagen/GNU-Linux-x86/PgSAgen $tmpdir/"$K-mers.fa" $tmpdir/"$K-mers.fa" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
+PgSAgen $tmpdir/"$K-mers.fa" $tmpdir/"$K-mers.fa" >> HG-CoLoR.stdout 2>> HG-CoLoR.stderr
 
-$hgf/bin/formatLongReads.py "$longreads" > $tmpdir/"$formatLR"
+HGCformatLongReads.py "$longreads" > $tmpdir/"$formatLR"
 
 echo "["$(date)"] Aligning the short reads on the long reads"
 echo "----- blasr -----" >> HG-CoLoR.stderr
-$hgf/bin/blasr $tmpdir/good_long_corrected_SR.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$K" --bestn "$bestn" | sort -T $tmpdir/ -k 3 --parallel="$nproc" > $tmpdir/"$aln" 2>> HG-CoLoR.stderr
+blasr $tmpdir/good_long_corrected_SR.fa $tmpdir/"$formatLR" --nproc "$nproc" -m 6 --minAlnLength "$K" --bestn "$bestn" | sort -T $tmpdir/ -k 3 --parallel="$nproc" > $tmpdir/"$aln" 2>> HG-CoLoR.stderr
 
 echo "["$(date)"] Generating the corrected long reads"
 ulimit -s 65536
-$hgf/bin/HG-CoLoR -t "$tmpdir" -K "$K" -d "$seedsdistance" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -m "$mismatches" -j "$nproc" -r $tmpdir/"$formatLR" -a $tmpdir/"$aln" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
-$hgf/bin/trim.py "$out.fasta" > "$out.trim.fasta"
-$hgf/bin/split.py "$out.trim.fasta" > "$out.split.fasta"
+HG-CoLoR-correct -t "$tmpdir" -K "$K" -d "$seedsdistance" -o "$seedsoverlap" -k "$k" -b "$branches" -s "$seedskips" -m "$mismatches" -j "$nproc" -r $tmpdir/"$formatLR" -a $tmpdir/"$aln" $tmpdir/"$K-mers.fa.pgsa" > "$out.fasta"
+HGCtrim.py "$out.fasta" > "$out.trim.fasta"
+HGCsplit.py "$out.trim.fasta" > "$out.split.fasta"
 
 echo "["$(date)"] Removing the temporary files"
 rm -Rf $tmpdir

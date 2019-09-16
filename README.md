@@ -35,6 +35,12 @@ Then run the install.sh script:
   ```bash
   ./install.sh
   ```
+
+And add the HG-CoLoR and PgSA bin folders to your $PATH:
+  ```bash
+  export PATH=$PWD/bin/:$PATH
+  export PATH=$PWD/PgSA/dist/pgsagen/GNU-Linux-x86/:$PATH
+  ```
   
 Running HG-CoLoR
 --------------

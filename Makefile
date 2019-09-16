@@ -16,11 +16,11 @@ KMC_QUERY_OBJS = \
 $(KMC_QUERY_DIR)/nc_utils.o \
 $(KMC_QUERY_DIR)/kmc_query.o
 
-EXECS=HG-CoLoR
+EXECS=HG-CoLoR-correct
 all: $(EXECS)
 
-HG-CoLoR: seedsMerging.o seedsLinking.o reverseComplement.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) main.o
-	$(CC) -o bin/HG-CoLoR src/reverseComplement.o src/seedsMerging.o src/seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) src/main.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
+HG-CoLoR-correct: seedsMerging.o seedsLinking.o reverseComplement.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) main.o
+	$(CC) -o bin/HG-CoLoR-correct src/reverseComplement.o src/seedsMerging.o src/seedsLinking.o $(KMC_QUERY_OBJS) $(KMC_API_OBJS) src/main.o $(LDFLAGS) -Wl,-R$(PGSA_LIB)
 
 reverseComplement.o: src/reverseComplement.cpp
 	$(CC) -o src/reverseComplement.o -c src/reverseComplement.cpp $(CFLAGS)
@@ -38,4 +38,4 @@ main.o: src/main.cpp src/seedsLinking.h
 	$(CC) -o src/main.o -c src/main.cpp $(CFLAGS) $(LDFLAGS) -I$(PGSA_SRC)
 
 clean:
-	rm -Rf src/*.o src/kmc_query/*.o bin/HG-CoLoR
+	rm -Rf src/*.o src/kmc_query/*.o bin/HG-CoLoR-correct
