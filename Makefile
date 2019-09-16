@@ -1,8 +1,9 @@
+curDir = $(shell pwd)
 CC=g++
 CFLAGS  = -Wall -O3 -m64 -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11
 
-PGSA_LIB=PgSA/dist/pgsalib/GNU-Linux-x86/
-PGSA_SRC=PgSA/src/
+PGSA_LIB=$(curDir)/PgSA/dist/pgsalib/GNU-Linux-x86/
+PGSA_SRC=$(curDir)/PgSA/src/
 
 LDFLAGS=-lPgSA -L$(PGSA_LIB) -lpthread
 
