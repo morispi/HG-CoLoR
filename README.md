@@ -6,7 +6,7 @@ the short reads to the long reads, are used as anchor points on the variable-ord
 from the short reads, which is traversed in order to find paths allowing to link seeds together. Such paths
 between seeds dictate corrections for the missing part of the long reads, that are not covered by seeds.
 
-Requirments
+Requirements
 --------------
 
   - A Linux based operating system.
